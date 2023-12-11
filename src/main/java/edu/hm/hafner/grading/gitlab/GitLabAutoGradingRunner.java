@@ -59,9 +59,17 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
                 return;
             }
 
+            String mergeRequestId = getEnv("CI_MERGE_REQUEST_IID", log);
             var report = new GradingReport();
             var comment = report.getMarkdownSummary(score, ":mortar_board: Quality Status");
-            gitLabApi.getCommitsApi().addComment(project.getId(), sha, comment);
+            if (mergeRequestId.isBlank() || !StringUtils.isNumeric(mergeRequestId)) {
+                gitLabApi.getCommitsApi()
+                        .addComment(project.getId(), sha, comment);
+            }
+            else {
+                gitLabApi.getNotesApi()
+                        .createMergeRequestNote(project.getId(), Long.parseLong(mergeRequestId), comment);
+            }
         }
         catch (GitLabApiException exception) {
             throw new IllegalStateException("Can't connect to GitLab", exception);
