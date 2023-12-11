@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>edu.hm.hafner</groupId>
+    <artifactId>codingstyle-pom</artifactId>
+    <version>3.40.0</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>edu.hm.hafner</groupId>
+  <artifactId>autograding-gitlab-action</artifactId>
+  <version>1.0.2-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <properties>
+    <module.name>${project.groupId}.autograding.gitlab.action</module.name>
+    <docker-image-tag>${project.version}</docker-image-tag>
+
+    <java.version>17</java.version>
+
+    <jib-maven-plugin.version>3.4.0</jib-maven-plugin.version>
+    <testcontainers.version>1.19.3</testcontainers.version>
+
+    <autograding-model.version>3.11.0</autograding-model.version>
+    <analysis-model.version>11.13.0</analysis-model.version>
+    <coverage-model.version>0.36.0</coverage-model.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>edu.hm.hafner</groupId>
+      <artifactId>autograding-model</artifactId>
+      <version>${autograding-model.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>edu.hm.hafner</groupId>
+          <artifactId>analysis-model</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.google.errorprone</groupId>
+          <artifactId>error_prone_annotations</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.github.spotbugs</groupId>
+          <artifactId>spotbugs-annotations</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-lang3</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-io</groupId>
+          <artifactId>commons-io</artifactId>
+        </exclusion>
+        <exclusion>
+          <artifactId>coverage-model</artifactId>
+          <groupId>edu.hm.hafner</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>codingstyle</artifactId>
+          <groupId>edu.hm.hafner</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>streamex</artifactId>
+          <groupId>one.util</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>edu.hm.hafner</groupId>
+      <artifactId>analysis-model</artifactId>
+      <version>${analysis-model.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.github.spotbugs</groupId>
+          <artifactId>spotbugs-annotations</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-io</groupId>
+          <artifactId>commons-io</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>edu.hm.hafner</groupId>
+      <artifactId>coverage-model</artifactId>
+      <version>${coverage-model.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.gitlab4j</groupId>
+      <artifactId>gitlab4j-api</artifactId>
+      <version>5.3.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.15.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.14.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <version>${testcontainers.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${testcontainers.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <finalName>${project.artifactId}</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <argLine>@{argLine} --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.google.cloud.tools</groupId>
+        <artifactId>jib-maven-plugin</artifactId>
+        <version>${jib-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>local-docker</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>dockerBuild</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>docker-io</id>
+            <phase>install</phase>
+            <goals>
+              <goal>build</goal>
+            </goals>
+            <configuration>
+              <to>
+                <image>docker.io/uhafner/autograding-gitlab-action:${docker-image-tag}</image>
+                <auth>
+                  <username>${env.DOCKER_IO_USERNAME}</username>
+                  <password>${env.DOCKER_IO_PASSWORD}</password>
+                </auth>
+              </to>
+            </configuration>
+          </execution>
+        </executions>
+        <configuration>
+          <to>
+            <image>docker.io/uhafner/autograding-gitlab-action:${docker-image-tag}</image>
+            <auth>
+              <username>${env.DOCKER_IO_USERNAME}</username>
+              <password>${env.DOCKER_IO_PASSWORD}</password>
+            </auth>
+          </to>
+          <from>
+            <image>maven:3.9.5-eclipse-temurin-21-alpine</image>
+          </from>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.revapi</groupId>
+        <artifactId>revapi-maven-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
