@@ -79,7 +79,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
             }
         }
         catch (GitLabApiException exception) {
-            throw new IllegalStateException("Can't connect to GitLab", exception);
+            log.logException(exception, "Error while accessing GitLab API");
         }
     }
 

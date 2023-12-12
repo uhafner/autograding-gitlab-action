@@ -13,7 +13,7 @@
 
   <groupId>edu.hm.hafner</groupId>
   <artifactId>autograding-gitlab-action</artifactId>
-  <version>1.0.6-SNAPSHOT</version>
+  <version>1.0.8-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <properties>
