@@ -61,7 +61,9 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
 
             String mergeRequestId = getEnv("CI_MERGE_REQUEST_IID", log);
             var report = new GradingReport();
-            var comment = report.getMarkdownSummary(score, ":mortar_board: Quality Status");
+            var comment = getEnv("SKIP_DETAILS", log).isEmpty()
+                    ? report.getMarkdownDetails(score)
+                    : report.getMarkdownSummary(score, ":mortar_board: Quality Status");
             if (mergeRequestId.isBlank() || !StringUtils.isNumeric(mergeRequestId)) {
                 gitLabApi.getCommitsApi()
                         .addComment(project.getId(), sha, comment);
@@ -69,6 +71,11 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
             else {
                 gitLabApi.getNotesApi()
                         .createMergeRequestNote(project.getId(), Long.parseLong(mergeRequestId), comment);
+            }
+
+            if (getEnv("SKIP_ANNOTATIONS", log).isEmpty()) {
+                var annotationBuilder = new GitLabCommentBuilder(gitLabApi.getCommitsApi(), project.getId(), sha);
+                annotationBuilder.createAnnotations(score, log);
             }
         }
         catch (GitLabApiException exception) {
