@@ -1,11 +1,6 @@
 # Autograding GitLab Action 
 
 [![GitHub Actions](https://github.com/uhafner/autograding-gitlab-action/workflows/CD/badge.svg)](https://github.com/uhafner/autograding-gitlab-action/actions/workflows/cd.yml)
-[![Line Coverage](https://raw.githubusercontent.com/uhafner/autograding-gitlab-action/main/badges/line-coverage.svg)](https://github.com/uhafner/autograding-gitlab-action/actions/workflows/dogfood.yml)
-[![Branch Coverage](https://raw.githubusercontent.com/uhafner/autograding-gitlab-action/main/badges/branch-coverage.svg)](https://github.com/uhafner/autograding-gitlab-action/actions/workflows/dogfood.yml)
-[![Mutation Coverage](https://raw.githubusercontent.com/uhafner/autograding-gitlab-action/main/badges/mutation-coverage.svg)](https://github.com/uhafner/autograding-gitlab-action/actions/workflows/dogfood.yml)
-[![Style Warnings](https://raw.githubusercontent.com/uhafner/autograding-gitlab-action/main/badges/style-warnings.svg)](https://github.com/uhafner/autograding-gitlab-action/actions/workflows/dogfood.yml)
-[![Potential Bugs](https://raw.githubusercontent.com/uhafner/autograding-gitlab-action/main/badges/bugs.svg)](https://github.com/uhafner/autograding-gitlab-action/actions/workflows/dogfood.yml)
 
 This GitLab action autogrades projects based on a configurable set of metrics and gives feedback on merge requests (or single commits). I use this action to automatically grade student projects in my lectures at the Munich University of Applied Sciences. 
 
