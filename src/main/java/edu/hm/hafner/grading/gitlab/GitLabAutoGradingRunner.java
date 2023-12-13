@@ -3,6 +3,7 @@ package edu.hm.hafner.grading.gitlab;
 import org.apache.commons.lang3.StringUtils;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
+import org.gitlab4j.api.models.Project;
 
 import edu.hm.hafner.grading.AggregatedScore;
 import edu.hm.hafner.grading.AutoGradingRunner;
@@ -50,8 +51,6 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
                 return;
             }
 
-            var project = gitLabApi.getProjectApi().getProject(39165L);
-
             String sha = getEnv("CI_COMMIT_SHA", log);
             if (sha.isBlank()) {
                 log.logError("No valid CI_COMMIT_SHA found - skipping");
@@ -59,27 +58,35 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
                 return;
             }
 
-            String mergeRequestId = getEnv("CI_MERGE_REQUEST_IID", log);
-            var report = new GradingReport();
-            var comment = getEnv("SKIP_DETAILS", log).isEmpty()
-                    ? report.getMarkdownDetails(score)
-                    : report.getMarkdownSummary(score, ":mortar_board: Quality Status");
-            if (mergeRequestId.isBlank() || !StringUtils.isNumeric(mergeRequestId)) {
-                gitLabApi.getCommitsApi()
-                        .addComment(project.getId(), sha, comment);
-            }
-            else {
-                gitLabApi.getNotesApi()
-                        .createMergeRequestNote(project.getId(), Long.parseLong(mergeRequestId), comment);
-            }
-
-            if (getEnv("SKIP_ANNOTATIONS", log).isEmpty()) {
-                var annotationBuilder = new GitLabCommentBuilder(gitLabApi.getCommitsApi(), project.getId(), sha);
-                annotationBuilder.createAnnotations(score, log);
-            }
+            var project = gitLabApi.getProjectApi().getProject(Long.parseLong(projectId));
+            grade(score, log, gitLabApi, project, sha);
         }
         catch (GitLabApiException exception) {
             log.logException(exception, "Error while accessing GitLab API");
+        }
+    }
+
+    private void grade(final AggregatedScore score, final FilteredLog log, final GitLabApi gitLabApi,
+            final Project project, final String sha) throws GitLabApiException {
+        var report = new GradingReport();
+        var comment = getEnv("SKIP_DETAILS", log).isEmpty()
+                ? report.getMarkdownDetails(score)
+                : report.getMarkdownSummary(score, ":mortar_board: Quality Status");
+
+        String mergeRequestId = getEnv("CI_MERGE_REQUEST_IID", log);
+        if (mergeRequestId.isBlank() || !StringUtils.isNumeric(mergeRequestId)) {
+            gitLabApi.getCommitsApi()
+                    .addComment(project.getId(), sha, comment);
+        }
+        else {
+            gitLabApi.getNotesApi()
+                    .createMergeRequestNote(project.getId(), Long.parseLong(mergeRequestId), comment);
+        }
+
+        if (getEnv("SKIP_LINE_COMMENTS", log).isEmpty()) {
+            var annotationBuilder = new GitLabCommentBuilder(gitLabApi.getCommitsApi(), project.getId(), sha,
+                    getEnv("CI_PROJECT_DIR", log) + "/");
+            annotationBuilder.createAnnotations(score, log);
         }
     }
 

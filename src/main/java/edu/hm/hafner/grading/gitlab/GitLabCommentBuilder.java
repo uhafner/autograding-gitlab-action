@@ -7,6 +7,9 @@ import org.gitlab4j.api.GitLabApiException;
 import edu.hm.hafner.grading.CommentBuilder;
 
 /**
+ * Creates GitLab commit comments for static analysis warnings, for lines with missing coverage, and for lines with
+ * survived mutations.
+ *
  * @author Ullrich Hafner
  */
 public class GitLabCommentBuilder extends CommentBuilder {
@@ -24,8 +27,13 @@ public class GitLabCommentBuilder extends CommentBuilder {
      *         the project ID in GitLab
      * @param sha
      *         the commit ID in Git
+     * @param workingDirectory
+     *         the working directory of the GitLab job, needs to be removed from the file names
      */
-    public GitLabCommentBuilder(final CommitsApi commitsApi, final long projectId, final String sha) {
+    public GitLabCommentBuilder(final CommitsApi commitsApi, final long projectId, final String sha,
+            final String workingDirectory) {
+        super(workingDirectory);
+
         this.commitsApi = commitsApi;
         this.projectId = projectId;
         this.sha = sha;
@@ -38,7 +46,6 @@ public class GitLabCommentBuilder extends CommentBuilder {
             final int columnStart, final int columnEnd, final String details) {
         try {
             commitsApi.addComment(projectId, sha, message, relativePath, lineStart, LineType.NEW);
-            System.out.println(relativePath);
         }
         catch (GitLabApiException exception) {
             // ignore exceptions
