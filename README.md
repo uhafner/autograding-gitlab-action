@@ -3,11 +3,12 @@
 [![GitHub Actions](https://github.com/uhafner/autograding-gitlab-action/workflows/CD/badge.svg)](https://github.com/uhafner/autograding-gitlab-action/actions/workflows/cd.yml)
 
 This GitLab action autogrades projects based on a configurable set of metrics and gives feedback on merge requests (or single commits). I use this action to automatically grade student projects in my lectures at the Munich University of Applied Sciences.
+
 You can see the results of this action in the [example pull request](https://github.com/uhafner/autograding-github-action/pull/297) and the associated [GitHub Checks output](https://github.com/uhafner/autograding-github-action/runs/19411191545). Another real-live example is visible in the [pull request](https://gitlab.lrz.de/dev/java2-assignment1/-/merge_requests/2) of a fake student PR.
 
 ![Pull request comment](images/pr-comment.png)
 
-Please have a look at my [companion coding style](https://github.com/uhafner/codingstyle) and [Maven parent POM](https://github.com/uhafner/codingstyle-pom) to see how to create Java projects that can be graded using this GitLab action.
+Please have a look at my [companion coding style](https://github.com/uhafner/codingstyle) and [Maven parent POM](https://github.com/uhafner/codingstyle-pom) to see how to create Java projects that can be graded using this GitLab action. If you are hosting your project on GitHub, then you might be interested in my [similar GitHub action](https://github.com/uhafner/autograding-github-action) as well.
 
 This action is inspired by my similar Jenkins plugins: 
 - [Jenkins Warnings plugin](https://github.com/jenkinsci/warnings-ng-plugin)
