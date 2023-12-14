@@ -4,7 +4,7 @@
 
 This GitLab action autogrades projects based on a configurable set of metrics and gives feedback on merge requests (or single commits). I use this action to automatically grade student projects in my lectures at the Munich University of Applied Sciences.
 
-You can see the results of this action in the [example pull request](https://gitlab.lrz.de/dev/java2-assignment1/-/merge_requests/4) of a fake student project.
+You can see the results of this action in the [example pull request](https://gitlab.lrz.de/dev/java2-assignment1/-/merge_requests/5) of a fake student project.
 
 ![Pull request comment](images/pr-comment.png)
 
