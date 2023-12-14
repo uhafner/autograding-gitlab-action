@@ -1,8 +1,11 @@
 package edu.hm.hafner.grading.gitlab;
 
 import org.apache.commons.lang3.StringUtils;
+import org.gitlab4j.api.DiscussionsApi;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
+import org.gitlab4j.api.models.MergeRequest;
+import org.gitlab4j.api.models.MergeRequestVersion;
 import org.gitlab4j.api.models.Project;
 
 import edu.hm.hafner.grading.AggregatedScore;
@@ -43,6 +46,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
 
         try (GitLabApi gitLabApi = new GitLabApi(gitlabUrl, oAuthToken)) {
             gitLabApi.setRequestTimeout(1000, 2000);
+            gitLabApi.enableRequestResponseLogging();
 
             String projectId = getEnv("CI_PROJECT_ID", log);
             if (projectId.isBlank() || !StringUtils.isNumeric(projectId)) {
@@ -75,19 +79,62 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
 
         String mergeRequestId = getEnv("CI_MERGE_REQUEST_IID", log);
         if (mergeRequestId.isBlank() || !StringUtils.isNumeric(mergeRequestId)) {
-            gitLabApi.getCommitsApi()
-                    .addComment(project.getId(), sha, comment);
+            createCommentOnCommit(gitLabApi, project, sha, comment);
+            createLineCommentsOnCommit(score, log, gitLabApi, project, sha);
         }
         else {
-            gitLabApi.getNotesApi()
-                    .createMergeRequestNote(project.getId(), Long.parseLong(mergeRequestId), comment);
-        }
+            createCommentOnMergeRequest(gitLabApi, project, mergeRequestId, comment);
 
-        if (getEnv("SKIP_LINE_COMMENTS", log).isEmpty()) {
-            var annotationBuilder = new GitLabCommentBuilder(gitLabApi.getCommitsApi(), project.getId(), sha,
-                    getEnv("CI_PROJECT_DIR", log) + "/");
-            annotationBuilder.createAnnotations(score, log);
+            var versions = gitLabApi.getMergeRequestApi()
+                    .getDiffVersions(project.getId(), Long.parseLong(mergeRequestId));
+            if (versions.isEmpty()) {
+                createLineCommentsOnCommit(score, log, gitLabApi, project, sha);
+            }
+            else {
+                var mergeRequest = gitLabApi.getMergeRequestApi()
+                        .getMergeRequest(project.getId(), Long.parseLong(mergeRequestId));
+                createLineCommentsOnDiff(score, log, gitLabApi.getDiscussionsApi(), mergeRequest, versions.get(0));
+            }
         }
+        log.logInfo("GitLab Action has finished");
+    }
+
+    private void createLineCommentsOnDiff(final AggregatedScore score, final FilteredLog log,
+            final DiscussionsApi discussionsApi, final MergeRequest mergeRequest,
+            final MergeRequestVersion lastVersion) {
+        if (canCreateLineComments(log)) {
+            var annotationBuilder = new GitLabDiffCommentBuilder(discussionsApi, mergeRequest, lastVersion,
+                    getWorkingDirectory(log));
+            annotationBuilder.createAnnotations(score);
+        }
+    }
+
+    private String getWorkingDirectory(final FilteredLog log) {
+        return getEnv("CI_PROJECT_DIR", log) + "/";
+    }
+
+    private void createLineCommentsOnCommit(final AggregatedScore score, final FilteredLog log, final GitLabApi gitLabApi,
+            final Project project, final String sha) {
+        if (canCreateLineComments(log)) {
+            var commentBuilder = new GitLabCommitCommentBuilder(gitLabApi.getCommitsApi(), project.getId(), sha,
+                    getWorkingDirectory(log));
+            commentBuilder.createAnnotations(score);
+        }
+    }
+
+    private boolean canCreateLineComments(final FilteredLog log) {
+        return getEnv("SKIP_LINE_COMMENTS", log).isEmpty();
+    }
+
+    private void createCommentOnMergeRequest(final GitLabApi gitLabApi, final Project project, final String mergeRequestId,
+            final String comment) throws GitLabApiException {
+        gitLabApi.getNotesApi()
+                .createMergeRequestNote(project.getId(), Long.parseLong(mergeRequestId), comment);
+    }
+
+    private void createCommentOnCommit(final GitLabApi gitLabApi, final Project project, final String sha, final String comment)
+            throws GitLabApiException {
+        gitLabApi.getCommitsApi().addComment(project.getId(), sha, comment);
     }
 
     private String getEnv(final String key, final FilteredLog log) {
