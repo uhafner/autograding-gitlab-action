@@ -33,7 +33,7 @@ build:
     - mvn -V --color always -ntp clean verify --file pom.xml '-Dgpg.skip' -Ppit
 
 test:
-  image: uhafner/autograding-gitlab-action:1.1.0
+  image: uhafner/autograding-gitlab-action:1.2.0
   stage: test
   variables:
     CONFIG: >
@@ -144,8 +144,7 @@ You can either use the covered percentage as positive impact or the missed perce
 Missed lines or branches as well as survived mutations will be shown as annotations in the pull request:
 
 ![Line coverage comment](images/line-coverage-comment.png)
-![Branch coverage comment](images/branch-coverage-comment.png)
-![Mutation coverage comment](images/mutations-comment.png)
+![Branch and mutation coverage comment](images/mutation-coverage-comment.png)
 
 ## Static analysis (e.g., number of warnings)
 
