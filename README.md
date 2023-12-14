@@ -10,7 +10,7 @@ You can see the results of this action in the [example pull request](https://git
 
 Please have a look at my [companion coding style](https://github.com/uhafner/codingstyle) and [Maven parent POM](https://github.com/uhafner/codingstyle-pom) to see how to create Java projects that can be graded using this GitLab action. If you are hosting your project on GitHub, then you might be interested in my [similar GitHub action](https://github.com/uhafner/autograding-github-action) as well.
 
-This action is inspired by my similar Jenkins plugins: 
+Both actions are inspired by my Jenkins plugins: 
 - [Jenkins Warnings plugin](https://github.com/jenkinsci/warnings-ng-plugin)
 - [Jenkins Coverage plugin](https://github.com/jenkinsci/coverage-plugin)
 - [Jenkins Autograding plugin](https://github.com/jenkinsci/autograding-plugin)
