@@ -1,15 +1,15 @@
 - name: bug
   description: Bugs or performance problems
   color: CC0000
-- name: dependencies
-  description: Update of dependencies
-  color: 0366d6
 - name: feature
   color: a4c6fb
   description: New features
 - name: enhancement
   description: Enhancement of existing functionality
   color: 94a6eb
+- name: dependencies
+  description: Update of dependencies
+  color: 0366d6
 - name: deprecated
   description: Deprecating API
   color: f4c21d
