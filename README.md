@@ -141,7 +141,7 @@ This metric can be configured using a JSON object `coverage`, see the example be
 
 You can either use the covered percentage as positive impact or the missed percentage as negative impact (a mix of both makes little sense but would work as well). Please make sure to define exactly a unique and supported metric for each tool. For example, JaCoCo provides `line` and `branch` coverage, so you need to define two tools for JaCoCo. PIT provides mutation coverage, so you need to define a tool for PIT that uses the metric `mutation`. 
 
-Missed lines or branches as well as survived mutations will be shown as annotations in the pull request:
+Missed lines or branches as well as survived mutations will be shown as comments in the merge request:
 
 ![Line coverage comment](images/line-coverage-comment.png)
 ![Branch and mutation coverage comment](images/mutation-coverage-comment.png)
@@ -200,7 +200,7 @@ This metric can be configured using a JSON object `analysis`, see the example ab
 
 Normally, you would only use a negative impact for this metric: each warning (of a given severity) will reduce the final score by the specified amount. You can define the impact of each severity level individually. 
 
-All warnings will be shown as annotations in the pull request:
+All warnings will be shown as comments in the merge request:
 
 ![Warning annotations](images/analysis-comment.png )
 
