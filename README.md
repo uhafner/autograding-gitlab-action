@@ -209,5 +209,6 @@ All warnings will be shown as comments in the merge request:
 This action can be configured using the following environment variables (see example above):
 - ``GITLAB_TOKEN``: mandatory GitLab access token.
 - ``CONFIG: "{...}"``: optional configuration, see sections above for details, or consult the [autograding-model](https://github.com/uhafner/autograding-model) project for the exact implementation. If not specified, a [default configuration](https://github.com/uhafner/autograding-model/blob/main/src/main/resources/default-config.json) will be used.
+- ``DISPLAY_NAME: "Name in the comment title"``: optional name in the comment title (overwrites the default: "Autograding score").
 - ``SKIP_LINE_COMMENTS: true``: Optional flag to skip the creation of commit comments at specific lines (for warnings and missed coverage).
 - ``SKIP_DETAILS: true``: Optional flag to skip the details of the results (e.g., stack trace of failed tests, autograding detail tables) in the commit or merge request comment.

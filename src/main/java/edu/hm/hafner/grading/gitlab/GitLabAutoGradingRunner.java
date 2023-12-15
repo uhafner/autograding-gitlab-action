@@ -74,8 +74,8 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
             final Project project, final String sha) throws GitLabApiException {
         var report = new GradingReport();
         var comment = getEnv("SKIP_DETAILS", log).isEmpty()
-                ? report.getMarkdownDetails(score)
-                : report.getMarkdownSummary(score, ":mortar_board: Quality Status");
+                ? report.getMarkdownDetails(score, getTitleName())
+                : report.getMarkdownSummary(score, getTitleName());
 
         String mergeRequestId = getEnv("CI_MERGE_REQUEST_IID", log);
         if (mergeRequestId.isBlank() || !StringUtils.isNumeric(mergeRequestId)) {
@@ -97,6 +97,10 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
             }
         }
         log.logInfo("GitLab Action has finished");
+    }
+
+    private String getTitleName() {
+        return StringUtils.defaultIfBlank(System.getenv("DISPLAY_NAME"), "Autograding score");
     }
 
     private void createLineCommentsOnDiff(final AggregatedScore score, final FilteredLog log,
