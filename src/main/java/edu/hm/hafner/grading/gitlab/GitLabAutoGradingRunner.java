@@ -74,7 +74,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
             final Project project, final String sha) throws GitLabApiException {
         var report = new GradingReport();
         var comment = getEnv("SKIP_DETAILS", log).isEmpty()
-                ? report.getMarkdownDetails(score)
+                ? report.getMarkdownDetails(score, getTitleName())
                 : report.getMarkdownSummary(score, getTitleName());
 
         String mergeRequestId = getEnv("CI_MERGE_REQUEST_IID", log);
