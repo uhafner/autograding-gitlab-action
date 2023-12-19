@@ -33,7 +33,7 @@ build:
     - mvn -V --color always -ntp clean verify --file pom.xml '-Dgpg.skip' -Ppit
 
 test:
-  image: uhafner/autograding-gitlab-action:1.2.0
+  image: uhafner/autograding-gitlab-action:1.4.0
   stage: test
   variables:
     CONFIG: >
