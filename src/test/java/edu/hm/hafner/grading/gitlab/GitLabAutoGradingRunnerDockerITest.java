@@ -108,8 +108,7 @@ public class GitLabAutoGradingRunnerDockerITest {
                 "maxScore": 100,
                 "coveredPercentageImpact": 1,
                 "missedPercentageImpact": -1
-              }
-              ]
+              } ]
             }
             """;
     private static final String WS = "/github/workspace/target/";
@@ -153,7 +152,7 @@ public class GitLabAutoGradingRunnerDockerITest {
                     .contains(new String[] {
                             "Processing 1 test configuration(s)",
                             "-> Tests Total: TESTS: 1 tests",
-                            "JUnit Score: 100 of 100",
+                            "Tests Score: 100 of 100",
                             "Processing 2 coverage configuration(s)",
                             "-> Line Coverage Total: LINE: 10.93% (33/302)",
                             "-> Branch Coverage Total: BRANCH: 9.52% (4/42)",
@@ -179,7 +178,7 @@ public class GitLabAutoGradingRunnerDockerITest {
                             "Processing 1 test configuration(s)",
                             "-> Tests Total: TESTS: 0 tests",
                             "Configuration error for 'Tests'?",
-                            "JUnit Score: 100 of 100",
+                            "Tests Score: 100 of 100",
                             "Processing 2 coverage configuration(s)",
                             "=> Code Coverage Score: 0 of 100",
                             "Configuration error for 'Line Coverage'?",
