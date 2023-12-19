@@ -1,6 +1,5 @@
 package edu.hm.hafner.grading.gitlab;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -112,10 +111,9 @@ public class GitLabAutoGradingRunnerDockerITest {
             }
             """;
     private static final String WS = "/github/workspace/target/";
-    private static final String LOCAL_METRICS_FILE = "target/metrics.env";
 
     @Test
-    void shouldGradeInDockerContainer() throws TimeoutException, IOException {
+    void shouldGradeInDockerContainer() throws TimeoutException {
         try (var container = createContainer()) {
             container.withEnv("CONFIG", CONFIGURATION);
             startContainerWithAllFiles(container);
