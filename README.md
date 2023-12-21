@@ -213,3 +213,10 @@ This action can be configured using the following environment variables (see exa
 - ``DISPLAY_NAME: "Name in the comment title"``: optional name in the comment title (overwrites the default: "Autograding score").
 - ``SKIP_LINE_COMMENTS: true``: Optional flag to skip the creation of commit comments at specific lines (for warnings and missed coverage). By default, line comments are created.
 - ``SKIP_DETAILS: true``: Optional flag to skip the details of the results (e.g., stack trace of failed tests, autograding detail tables) in the commit or merge request comment. By default, the detailed report is created.
+
+## Monitoring Project Quality
+
+You can also use this action to monitor the quality of your project without creating a grading score: use only configurations that do not set the `maxScore` properties. Then this action basically works like a stand-alone version of my Jenkins [Warnings](https://github.com/jenkinsci/warnings-ng-plugin) and [Coverage](https://github.com/jenkinsci/coverage-plugin) plugins, see the following screenshots.
+
+![Quality Monitor Overview](images/quality-monitor-overview.png)
+![Quality Monitor Details](images/quality-monitor-details.png)
