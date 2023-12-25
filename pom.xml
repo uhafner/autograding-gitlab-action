@@ -33,7 +33,7 @@
     <testcontainers.version>1.19.3</testcontainers.version>
 
     <autograding-model.version>3.19.0</autograding-model.version>
-    <analysis-model.version>11.13.0</analysis-model.version>
+    <analysis-model.version>11.14.0</analysis-model.version>
     <coverage-model.version>0.36.0</coverage-model.version>
   </properties>
 
