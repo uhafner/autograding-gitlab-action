@@ -72,7 +72,7 @@ This action can be configured using the following environment variables (see exa
 
 ## GitLab Access Token
 
-The action needs a GitLab access token to create comments in the commit notes or merge request. You can create a new token with an arbitrary name in your GitLab user or group settings. The token needs the permissions `api, read_api, read_repository, write_repository` 
+The action needs a GitLab access token to create comments in the commit notes or merge request. You can create a new token with a meaningful name in your GitLab user or group settings. This token name will be used as author for all notes. The token needs the permissions `api, read_api, read_repository, write_repository` 
 
 ![Group Access Token](images/access-token.png)
 
