@@ -141,7 +141,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         gitLabApi.getCommitsApi().addComment(project.getId(), sha, comment);
     }
 
-    private String getEnv(final String key, final FilteredLog log) {
+    static String getEnv(final String key, final FilteredLog log) {
         String value = StringUtils.defaultString(System.getenv(key));
         log.logInfo(">>>> " + key + ": " + value);
         return value;
