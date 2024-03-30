@@ -82,30 +82,35 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
 
     // TODO: move up to model
     private String logVersionInfo(final FilteredLog log) {
-        var propertiesFile = AutoGradingRunner.class.getResourceAsStream("/git.properties");
-        if (propertiesFile == null) {
-            log.logError("Version information file '/git.properties' not found in class path");
+        try (var propertiesFile = AutoGradingRunner.class.getResourceAsStream("/git.properties")) {
+            if (propertiesFile == null) {
+                log.logError("Version information file '/git.properties' not found in class path");
 
+                return StringUtils.EMPTY;
+            }
+
+            try {
+                var gitProperties = new Properties();
+                gitProperties.load(propertiesFile);
+
+                log.logInfo("GitLab AutoGrading v%s (#%s)",
+                        gitProperties.getProperty("git.build.version"),
+                        gitProperties.getProperty("git.commit.id.abbrev"));
+
+                return "[GitLab AutoGrading](https://github.com/uhafner/autograding-gitlab-action/releases/tag/v%s) v%s (#%s)".formatted(
+                        gitProperties.getProperty("git.build.version"),
+                        gitProperties.getProperty("git.build.version"),
+                        gitProperties.getProperty("git.commit.id.abbrev"));
+            }
+            catch (IOException exception) {
+                log.logError("Can't read version information in '/git.properties'.");
+            }
             return StringUtils.EMPTY;
         }
-
-        try {
-            var gitProperties = new Properties();
-            gitProperties.load(propertiesFile);
-
-            log.logInfo("GitLab AutoGrading v%s (#%s)",
-                    gitProperties.getProperty("git.build.version"),
-                    gitProperties.getProperty("git.commit.id.abbrev"));
-
-            return "[GitLab AutoGrading](https://github.com/uhafner/autograding-gitlab-action/releases/tag/v%s) v%s (#%s)".formatted(
-                    gitProperties.getProperty("git.build.version"),
-                    gitProperties.getProperty("git.build.version"),
-                    gitProperties.getProperty("git.commit.id.abbrev"));
-        }
         catch (IOException exception) {
-            log.logError("Can't read version information in '/git.properties'.");
+            // ignore exception on close
+            return StringUtils.EMPTY;
         }
-        return StringUtils.EMPTY;
     }
 
     private void grade(final AggregatedScore score, final GitLabApi gitLabApi, final Project project, final String sha,

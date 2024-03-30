@@ -40,6 +40,8 @@ class GitLabDiffCommentBuilderTest {
               ]
             }
             """;
+    private static final String PROJECT_URL = "CI_PROJECT_URL";
+    private static final String COMMIT_SHA = "CI_COMMIT_SHA";
 
     @Test
     void shouldCreateRange() {
@@ -83,10 +85,10 @@ class GitLabDiffCommentBuilderTest {
     }
 
     private String getEnv(final String environment) {
-        if ("CI_PROJECT_URL".equals(environment)) {
+        if (PROJECT_URL.equals(environment)) {
             return URL;
         }
-        if ("CI_COMMIT_SHA".equals(environment)) {
+        if (COMMIT_SHA.equals(environment)) {
             return SHA;
         }
         throw new IllegalArgumentException("Unknown environment: " + environment);
