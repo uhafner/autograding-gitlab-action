@@ -1,5 +1,6 @@
 package edu.hm.hafner.grading.gitlab;
 
+import org.gitlab4j.api.CommitsApi;
 import org.gitlab4j.api.DiscussionsApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.MergeRequest;
@@ -39,6 +40,8 @@ class GitLabDiffCommentBuilderTest {
               ]
             }
             """;
+    private static final String PROJECT_URL = "CI_PROJECT_URL";
+    private static final String COMMIT_SHA = "CI_COMMIT_SHA";
 
     @Test
     void shouldCreateRange() {
@@ -82,10 +85,10 @@ class GitLabDiffCommentBuilderTest {
     }
 
     private String getEnv(final String environment) {
-        if ("CI_PROJECT_URL".equals(environment)) {
+        if (PROJECT_URL.equals(environment)) {
             return URL;
         }
-        if ("CI_COMMIT_SHA".equals(environment)) {
+        if (COMMIT_SHA.equals(environment)) {
             return SHA;
         }
         throw new IllegalArgumentException("Unknown environment: " + environment);
@@ -94,8 +97,9 @@ class GitLabDiffCommentBuilderTest {
     @Test
     void shouldCreateComment() throws GitLabApiException {
         var discussions = mock(DiscussionsApi.class);
-        var builder = new GitLabDiffCommentBuilder(discussions, mock(MergeRequest.class), mock(
-                MergeRequestVersion.class), "/work");
+        var commits = mock(CommitsApi.class);
+        var builder = new GitLabDiffCommentBuilder(commits, discussions, mock(MergeRequest.class),
+                mock(MergeRequestVersion.class), "/work", new FilteredLog("GitLab"));
 
         builder.createComment(CommentType.WARNING, FILE_NAME, 10, 100,
                 "Message", "Title", 1, 10, "Details", "Details-Markdown");
@@ -114,8 +118,9 @@ class GitLabDiffCommentBuilderTest {
     @Test
     void shouldCreateAnnotation() throws GitLabApiException {
         var discussions = mock(DiscussionsApi.class);
-        var gitlab = new GitLabDiffCommentBuilder(discussions, mock(MergeRequest.class), mock(
-                MergeRequestVersion.class), "/work");
+        var commits = mock(CommitsApi.class);
+        var gitlab = new GitLabDiffCommentBuilder(commits, discussions, mock(MergeRequest.class), mock(
+                        MergeRequestVersion.class), "/work", new FilteredLog("GitLab"));
 
         var score = new AggregatedScore(ANALYSIS_CONFIGURATION, new FilteredLog("Tests"));
         score.gradeAnalysis((tool, log) -> createReport());
