@@ -82,7 +82,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
 
     // TODO: move up to model
     private String logVersionInfo(final FilteredLog log) {
-        var propertiesFile = getClass().getResourceAsStream("/git.properties");
+        var propertiesFile = AutoGradingRunner.class.getResourceAsStream("/git.properties");
         if (propertiesFile == null) {
             log.logError("Version information file '/git.properties' not found in class path");
 
@@ -115,17 +115,19 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
                 ? report.getMarkdownDetails(score, getTitleName())
                 : report.getMarkdownSummary(score, getTitleName());
         comment = AUTOGRADING_MARKER + "\n\n" + comment + "\n\nCreated by " + autogradingVersionLink;
-        String mergeRequestId = getEnv("CI_MERGE_REQUEST_IID", log);
-        if (mergeRequestId.isBlank() || !StringUtils.isNumeric(mergeRequestId)) {
+        String mergeRequestEnvironment = getEnv("CI_MERGE_REQUEST_IID", log);
+        if (mergeRequestEnvironment.isBlank() || !StringUtils.isNumeric(mergeRequestEnvironment)) {
             createLineCommentsOnCommit(score, log, gitLabApi, project, sha);
 
             createCommentOnCommit(gitLabApi, project, sha, comment);
         }
         else {
+            var mergeRequestId = Long.parseLong(mergeRequestEnvironment);
+
             deleteExistingComments(gitLabApi, project, mergeRequestId, log);
 
             var versions = gitLabApi.getMergeRequestApi()
-                    .getDiffVersions(project.getId(), Long.parseLong(mergeRequestId));
+                    .getDiffVersions(project.getId(), mergeRequestId);
             if (versions.isEmpty()) {
                 log.logInfo("Diff versions are empty, adding line comments to commit");
                 createLineCommentsOnCommit(score, log, gitLabApi, project, sha);
@@ -133,12 +135,12 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
             else {
                 log.logInfo("Diff versions found, adding line comments to merge request diff");
                 var mergeRequest = gitLabApi.getMergeRequestApi()
-                        .getMergeRequest(project.getId(), Long.parseLong(mergeRequestId));
+                        .getMergeRequest(project.getId(), mergeRequestId);
                 createLineCommentsOnDiff(score, log, gitLabApi.getCommitsApi(), gitLabApi.getDiscussionsApi(),
                         mergeRequest, versions.get(0));
             }
 
-            createCommentOnMergeRequest(gitLabApi, project, mergeRequestId, comment, log);
+            createCommentOnMergeRequest(gitLabApi, project, mergeRequestEnvironment, comment, log);
         }
         log.logInfo("GitLab Action has finished");
     }
@@ -181,15 +183,14 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
     }
 
     private void deleteExistingComments(final GitLabApi gitLabApi, final Project project,
-            final String mergeRequestId, final FilteredLog log) throws GitLabApiException {
+            final long mergeRequestId, final FilteredLog log) throws GitLabApiException {
         var projectId = project.getId();
-        var mergeRequestIid = Long.parseLong(mergeRequestId);
 
         log.logInfo("Deleting old auto-grading notes");
         gitLabApi.getNotesApi()
-                .getMergeRequestNotes(projectId, mergeRequestIid).stream()
+                .getMergeRequestNotes(projectId, mergeRequestId).stream()
                 .filter(note -> note.getBody().startsWith(AUTOGRADING_MARKER))
-                .forEach(note -> delete(gitLabApi, note, projectId, mergeRequestIid));
+                .forEach(note -> delete(gitLabApi, note, projectId, mergeRequestId));
     }
 
     private void createCommentOnMergeRequest(final GitLabApi gitLabApi, final Project project, final String mergeRequestId,
