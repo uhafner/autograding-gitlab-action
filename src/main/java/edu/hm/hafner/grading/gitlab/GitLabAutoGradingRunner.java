@@ -1,11 +1,17 @@
 package edu.hm.hafner.grading.gitlab;
 
+import java.io.IOException;
+import java.util.Properties;
+import java.util.logging.Level;
+
 import org.apache.commons.lang3.StringUtils;
+import org.gitlab4j.api.CommitsApi;
 import org.gitlab4j.api.DiscussionsApi;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.MergeRequest;
 import org.gitlab4j.api.models.MergeRequestVersion;
+import org.gitlab4j.api.models.Note;
 import org.gitlab4j.api.models.Project;
 
 import edu.hm.hafner.grading.AggregatedScore;
@@ -19,6 +25,8 @@ import edu.hm.hafner.util.FilteredLog;
  * @author Ullrich Hafner
  */
 public class GitLabAutoGradingRunner extends AutoGradingRunner {
+    static final String AUTOGRADING_MARKER = "<!-- -[autograding-gitlab-action]- -->";
+
     /**
      * Public entry point, calls the action.
      *
@@ -31,6 +39,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
 
     @Override
     protected void publishGradingResult(final AggregatedScore score, final FilteredLog log) {
+        var version = logVersionInfo(log);
         var gitlabUrl = getEnv("CI_SERVER_URL", log);
         if (StringUtils.isBlank(gitlabUrl)) {
             log.logError("No CI_SERVER_URL defined - skipping");
@@ -46,7 +55,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
 
         try (GitLabApi gitLabApi = new GitLabApi(gitlabUrl, oAuthToken)) {
             gitLabApi.setRequestTimeout(1000, 2000);
-            gitLabApi.enableRequestResponseLogging();
+            gitLabApi.enableRequestResponseLogging(Level.FINE, 4096);
 
             String projectId = getEnv("CI_PROJECT_ID", log);
             if (projectId.isBlank() || !StringUtils.isNumeric(projectId)) {
@@ -63,38 +72,73 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
             }
 
             var project = gitLabApi.getProjectApi().getProject(Long.parseLong(projectId));
-            grade(score, log, gitLabApi, project, sha);
+
+            grade(score, gitLabApi, project, sha, version, log);
         }
         catch (GitLabApiException exception) {
             log.logException(exception, "Error while accessing GitLab API");
         }
     }
 
-    private void grade(final AggregatedScore score, final FilteredLog log, final GitLabApi gitLabApi,
-            final Project project, final String sha) throws GitLabApiException {
+    // TODO: move up to model
+    private String logVersionInfo(final FilteredLog log) {
+        var propertiesFile = getClass().getResourceAsStream("/git.properties");
+        if (propertiesFile == null) {
+            log.logError("Version information file '/git.properties' not found in class path");
+
+            return StringUtils.EMPTY;
+        }
+
+        try {
+            var gitProperties = new Properties();
+            gitProperties.load(propertiesFile);
+
+            log.logInfo("GitLab AutoGrading v%s (#%s)",
+                    gitProperties.getProperty("git.build.version"),
+                    gitProperties.getProperty("git.commit.id.abbrev"));
+
+            return "[GitLab AutoGrading](https://github.com/uhafner/autograding-gitlab-action/releases/tag/v%s) v%s (#%s)".formatted(
+                    gitProperties.getProperty("git.build.version"),
+                    gitProperties.getProperty("git.build.version"),
+                    gitProperties.getProperty("git.commit.id.abbrev"));
+        }
+        catch (IOException exception) {
+            log.logError("Can't read version information in '/git.properties'.");
+        }
+        return StringUtils.EMPTY;
+    }
+
+    private void grade(final AggregatedScore score, final GitLabApi gitLabApi, final Project project, final String sha,
+            final String autogradingVersionLink, final FilteredLog log) throws GitLabApiException {
         var report = new GradingReport();
         var comment = getEnv("SKIP_DETAILS", log).isEmpty()
                 ? report.getMarkdownDetails(score, getTitleName())
                 : report.getMarkdownSummary(score, getTitleName());
-
+        comment = AUTOGRADING_MARKER + "\n\n" + comment + "\n\nCreated by " + autogradingVersionLink;
         String mergeRequestId = getEnv("CI_MERGE_REQUEST_IID", log);
         if (mergeRequestId.isBlank() || !StringUtils.isNumeric(mergeRequestId)) {
-            createCommentOnCommit(gitLabApi, project, sha, comment);
             createLineCommentsOnCommit(score, log, gitLabApi, project, sha);
+
+            createCommentOnCommit(gitLabApi, project, sha, comment);
         }
         else {
-            createCommentOnMergeRequest(gitLabApi, project, mergeRequestId, comment);
+            deleteExistingComments(gitLabApi, project, mergeRequestId, log);
 
             var versions = gitLabApi.getMergeRequestApi()
                     .getDiffVersions(project.getId(), Long.parseLong(mergeRequestId));
             if (versions.isEmpty()) {
+                log.logInfo("Diff versions are empty, adding line comments to commit");
                 createLineCommentsOnCommit(score, log, gitLabApi, project, sha);
             }
             else {
+                log.logInfo("Diff versions found, adding line comments to merge request diff");
                 var mergeRequest = gitLabApi.getMergeRequestApi()
                         .getMergeRequest(project.getId(), Long.parseLong(mergeRequestId));
-                createLineCommentsOnDiff(score, log, gitLabApi.getDiscussionsApi(), mergeRequest, versions.get(0));
+                createLineCommentsOnDiff(score, log, gitLabApi.getCommitsApi(), gitLabApi.getDiscussionsApi(),
+                        mergeRequest, versions.get(0));
             }
+
+            createCommentOnMergeRequest(gitLabApi, project, mergeRequestId, comment, log);
         }
         log.logInfo("GitLab Action has finished");
     }
@@ -104,12 +148,27 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
     }
 
     private void createLineCommentsOnDiff(final AggregatedScore score, final FilteredLog log,
-            final DiscussionsApi discussionsApi, final MergeRequest mergeRequest,
+            final CommitsApi commitsApi, final DiscussionsApi discussionsApi, final MergeRequest mergeRequest,
             final MergeRequestVersion lastVersion) {
         if (canCreateLineComments(log)) {
-            var annotationBuilder = new GitLabDiffCommentBuilder(discussionsApi, mergeRequest, lastVersion,
-                    getWorkingDirectory(log));
+            var annotationBuilder = new GitLabDiffCommentBuilder(commitsApi, discussionsApi, mergeRequest, lastVersion,
+                    getWorkingDirectory(log), log);
             annotationBuilder.createAnnotations(score);
+        }
+        else {
+            log.logInfo("Skipping line comments on merge request diff");
+        }
+    }
+
+    private void createLineCommentsOnCommit(final AggregatedScore score, final FilteredLog log, final GitLabApi gitLabApi,
+            final Project project, final String sha) {
+        if (canCreateLineComments(log)) {
+            var commentBuilder = new GitLabCommitCommentBuilder(gitLabApi.getCommitsApi(), project.getId(), sha,
+                    getWorkingDirectory(log), log);
+            commentBuilder.createAnnotations(score);
+        }
+        else {
+            log.logInfo("Skipping line comments on commit");
         }
     }
 
@@ -117,23 +176,39 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         return getEnv("CI_PROJECT_DIR", log) + "/";
     }
 
-    private void createLineCommentsOnCommit(final AggregatedScore score, final FilteredLog log, final GitLabApi gitLabApi,
-            final Project project, final String sha) {
-        if (canCreateLineComments(log)) {
-            var commentBuilder = new GitLabCommitCommentBuilder(gitLabApi.getCommitsApi(), project.getId(), sha,
-                    getWorkingDirectory(log));
-            commentBuilder.createAnnotations(score);
-        }
-    }
-
     private boolean canCreateLineComments(final FilteredLog log) {
         return getEnv("SKIP_LINE_COMMENTS", log).isEmpty();
     }
 
-    private void createCommentOnMergeRequest(final GitLabApi gitLabApi, final Project project, final String mergeRequestId,
-            final String comment) throws GitLabApiException {
+    private void deleteExistingComments(final GitLabApi gitLabApi, final Project project,
+            final String mergeRequestId, final FilteredLog log) throws GitLabApiException {
+        var projectId = project.getId();
+        var mergeRequestIid = Long.parseLong(mergeRequestId);
+
+        log.logInfo("Deleting old auto-grading notes");
         gitLabApi.getNotesApi()
-                .createMergeRequestNote(project.getId(), Long.parseLong(mergeRequestId), comment);
+                .getMergeRequestNotes(projectId, mergeRequestIid).stream()
+                .filter(note -> note.getBody().startsWith(AUTOGRADING_MARKER))
+                .forEach(note -> delete(gitLabApi, note, projectId, mergeRequestIid));
+    }
+
+    private void createCommentOnMergeRequest(final GitLabApi gitLabApi, final Project project, final String mergeRequestId,
+            final String comment, final FilteredLog log) throws GitLabApiException {
+        var projectId = project.getId();
+        var mergeRequestIid = Long.parseLong(mergeRequestId);
+
+        log.logInfo("Creating merge request note");
+        gitLabApi.getNotesApi().createMergeRequestNote(projectId, mergeRequestIid, comment);
+    }
+
+    private void delete(final GitLabApi gitLabApi, final Note note,
+            final Long projectId, final long mergeRequestIid) {
+        try {
+            gitLabApi.getNotesApi().deleteMergeRequestNote(projectId, mergeRequestIid, note.getId());
+        }
+        catch (GitLabApiException exception) {
+            // ignore exceptions
+        }
     }
 
     private void createCommentOnCommit(final GitLabApi gitLabApi, final Project project, final String sha, final String comment)
@@ -141,7 +216,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         gitLabApi.getCommitsApi().addComment(project.getId(), sha, comment);
     }
 
-    static String getEnv(final String key, final FilteredLog log) {
+    private static String getEnv(final String key, final FilteredLog log) {
         String value = StringUtils.defaultString(System.getenv(key));
         log.logInfo(">>>> " + key + ": " + value);
         return value;

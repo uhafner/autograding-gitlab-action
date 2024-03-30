@@ -1,5 +1,6 @@
 package edu.hm.hafner.grading.gitlab;
 
+import org.gitlab4j.api.CommitsApi;
 import org.gitlab4j.api.DiscussionsApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.MergeRequest;
@@ -94,8 +95,9 @@ class GitLabDiffCommentBuilderTest {
     @Test
     void shouldCreateComment() throws GitLabApiException {
         var discussions = mock(DiscussionsApi.class);
-        var builder = new GitLabDiffCommentBuilder(discussions, mock(MergeRequest.class), mock(
-                MergeRequestVersion.class), "/work");
+        var commits = mock(CommitsApi.class);
+        var builder = new GitLabDiffCommentBuilder(commits, discussions, mock(MergeRequest.class),
+                mock(MergeRequestVersion.class), "/work", new FilteredLog("GitLab"));
 
         builder.createComment(CommentType.WARNING, FILE_NAME, 10, 100,
                 "Message", "Title", 1, 10, "Details", "Details-Markdown");
@@ -114,8 +116,9 @@ class GitLabDiffCommentBuilderTest {
     @Test
     void shouldCreateAnnotation() throws GitLabApiException {
         var discussions = mock(DiscussionsApi.class);
-        var gitlab = new GitLabDiffCommentBuilder(discussions, mock(MergeRequest.class), mock(
-                MergeRequestVersion.class), "/work");
+        var commits = mock(CommitsApi.class);
+        var gitlab = new GitLabDiffCommentBuilder(commits, discussions, mock(MergeRequest.class), mock(
+                        MergeRequestVersion.class), "/work", new FilteredLog("GitLab"));
 
         var score = new AggregatedScore(ANALYSIS_CONFIGURATION, new FilteredLog("Tests"));
         score.gradeAnalysis((tool, log) -> createReport());
