@@ -18,8 +18,8 @@ import edu.hm.hafner.util.VisibleForTesting;
 abstract class GitLabCommentBuilder extends CommentBuilder {
     private final FilteredLog log;
     private final CommitsApi commitsApi;
-    private int maxCoverageComments;
-    private int maxWarningComments;
+    private final int maxCoverageComments;
+    private final int maxWarningComments;
 
     @VisibleForTesting
     GitLabCommentBuilder() {
