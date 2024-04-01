@@ -1,7 +1,5 @@
 package edu.hm.hafner.grading.gitlab;
 
-import java.io.IOException;
-import java.util.Properties;
 import java.util.logging.Level;
 
 import org.apache.commons.lang3.StringUtils;
@@ -38,8 +36,12 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
     }
 
     @Override
+    protected String getDisplayName() {
+        return "GitLab Autograding";
+    }
+
+    @Override
     protected void publishGradingResult(final AggregatedScore score, final FilteredLog log) {
-        var version = logVersionInfo(log);
         var gitlabUrl = getEnv("CI_SERVER_URL", log);
         if (StringUtils.isBlank(gitlabUrl)) {
             log.logError("No CI_SERVER_URL defined - skipping");
@@ -73,53 +75,20 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
 
             var project = gitLabApi.getProjectApi().getProject(Long.parseLong(projectId));
 
-            grade(score, gitLabApi, project, sha, version, log);
+            grade(score, gitLabApi, project, sha, log);
         }
         catch (GitLabApiException exception) {
             log.logException(exception, "Error while accessing GitLab API");
         }
     }
 
-    // TODO: move up to model
-    private String logVersionInfo(final FilteredLog log) {
-        try (var propertiesFile = AutoGradingRunner.class.getResourceAsStream("/git.properties")) {
-            if (propertiesFile == null) {
-                log.logError("Version information file '/git.properties' not found in class path");
-
-                return StringUtils.EMPTY;
-            }
-
-            try {
-                var gitProperties = new Properties();
-                gitProperties.load(propertiesFile);
-
-                log.logInfo("GitLab AutoGrading v%s (#%s)",
-                        gitProperties.getProperty("git.build.version"),
-                        gitProperties.getProperty("git.commit.id.abbrev"));
-
-                return "[GitLab AutoGrading](https://github.com/uhafner/autograding-gitlab-action/releases/tag/v%s) v%s (#%s)".formatted(
-                        gitProperties.getProperty("git.build.version"),
-                        gitProperties.getProperty("git.build.version"),
-                        gitProperties.getProperty("git.commit.id.abbrev"));
-            }
-            catch (IOException exception) {
-                log.logError("Can't read version information in '/git.properties'.");
-            }
-            return StringUtils.EMPTY;
-        }
-        catch (IOException exception) {
-            // ignore exception on close
-            return StringUtils.EMPTY;
-        }
-    }
-
     private void grade(final AggregatedScore score, final GitLabApi gitLabApi, final Project project, final String sha,
-            final String autogradingVersionLink, final FilteredLog log) throws GitLabApiException {
+            final FilteredLog log) throws GitLabApiException {
         var report = new GradingReport();
         var comment = getEnv("SKIP_DETAILS", log).isEmpty()
                 ? report.getMarkdownDetails(score, getTitleName())
                 : report.getMarkdownSummary(score, getTitleName());
-        comment = AUTOGRADING_MARKER + "\n\n" + comment + "\n\nCreated by " + autogradingVersionLink;
+        comment = AUTOGRADING_MARKER + "\n\n" + comment + "\n\nCreated by " + getAutogradingVersionLink(log);
         String mergeRequestEnvironment = getEnv("CI_MERGE_REQUEST_IID", log);
         if (mergeRequestEnvironment.isBlank() || !StringUtils.isNumeric(mergeRequestEnvironment)) {
             createLineCommentsOnCommit(score, log, gitLabApi, project, sha);
@@ -148,6 +117,13 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
             createCommentOnMergeRequest(gitLabApi, project, mergeRequestEnvironment, comment, log);
         }
         log.logInfo("GitLab Action has finished");
+    }
+
+    private String getAutogradingVersionLink(final FilteredLog log) {
+        var version = readVersion(log);
+        var sha = readSha(log);
+        return "[%s](https://github.com/uhafner/autograding-gitlab-action/releases/tag/v%s) v%s (#%s)"
+                .formatted(getDisplayName(), version, version, sha);
     }
 
     private String getTitleName() {
