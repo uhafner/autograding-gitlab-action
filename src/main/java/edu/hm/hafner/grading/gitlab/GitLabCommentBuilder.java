@@ -18,6 +18,8 @@ import edu.hm.hafner.util.VisibleForTesting;
 abstract class GitLabCommentBuilder extends CommentBuilder {
     private final FilteredLog log;
     private final CommitsApi commitsApi;
+    private int maxCoverageComments;
+    private int maxWarningComments;
 
     @VisibleForTesting
     GitLabCommentBuilder() {
@@ -29,16 +31,22 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
 
         this.commitsApi = commitsApi;
         this.log = log;
-    }
 
-    @Override
-    protected int getMaxCoverageComments() {
-        return getIntegerEnvironment("MAX_COVERAGE_COMMENTS");
+        maxWarningComments = getIntegerEnvironment("MAX_WARNING_COMMENTS");
+        log.logInfo(">>>> MAX_WARNING_COMMENTS: ", getMaxWarningComments());
+
+        maxCoverageComments = getIntegerEnvironment("MAX_COVERAGE_COMMENTS");
+        log.logInfo(">>>> MAX_COVERAGE_COMMENTS: ", getMaxCoverageComments());
     }
 
     @Override
     protected int getMaxWarningComments() {
-        return getIntegerEnvironment("MAX_WARNING_COMMENTS");
+        return maxWarningComments;
+    }
+
+    @Override
+    protected int getMaxCoverageComments() {
+        return maxCoverageComments;
     }
 
     @SuppressWarnings("checkstyle:ParameterNumber")
@@ -111,8 +119,6 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
     }
 
     String getEnv(final String name) {
-        var value = System.getenv(name);
-        getLog().logInfo(">>>> " + name + ": " + value);
-        return StringUtils.defaultString(value);
+        return StringUtils.defaultString(System.getenv(name));
     }
 }
