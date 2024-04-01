@@ -45,37 +45,43 @@ class GitLabDiffCommentBuilderTest {
 
     @Test
     void shouldCreateRange() {
-        assertThat(createRange('L', 0, 0)).isEmpty();
-        assertThat(createRange('L', -1, 10)).isEmpty();
+        var builder = spy(GitLabCommentBuilder.class);
 
-        assertThat(createRange('L', 1, 10)).isEqualTo("L1-L10");
-        assertThat(createRange('L', 1, 1)).isEqualTo("L1");
+        assertThat(builder.createRange('L', 0, 0)).isEmpty();
+        assertThat(builder.createRange('L', -1, 10)).isEmpty();
+
+        assertThat(builder.createRange('L', 1, 10)).isEqualTo("L1-L10");
+        assertThat(builder.createRange('L', 1, 1)).isEqualTo("L1");
     }
 
     @Test
     void shouldCreateLinesAndColumns() {
-        assertThat(createLinesAndColumns("L1", 0, 0)).isEqualTo("(L1)");
-        assertThat(createLinesAndColumns("L1", 1, 0)).isEqualTo("(L1:C1)");
-        assertThat(createLinesAndColumns("L1", 2, 3)).isEqualTo("(L1:C2-C3)");
+        var builder = spy(GitLabCommentBuilder.class);
+
+        assertThat(builder.createLinesAndColumns("L1", 0, 0)).isEqualTo("(L1)");
+        assertThat(builder.createLinesAndColumns("L1", 1, 0)).isEqualTo("(L1:C1)");
+        assertThat(builder.createLinesAndColumns("L1", 2, 3)).isEqualTo("(L1:C2-C3)");
     }
 
     @Test
     void shouldCreateMarkDownMessage() {
-        assertThat(createMarkdownMessage(
+        var builder = spy(GitLabCommentBuilder.class);
+
+        assertThat(builder.createMarkdownMessage(
                 CommentType.WARNING, FILE,
                 10, 20, 5, 8,
                 "Title", "Message", "Details", this::getEnv))
                 .contains("#### :warning: &nbsp; Title", "Message", "Details",
                         "[Assignment.java(L10-L20:C5-C8)]",
                         URL + "/blob/" + SHA + "/" + FILE + "#L10-L20");
-        assertThat(createMarkdownMessage(
+        assertThat(builder.createMarkdownMessage(
                 CommentType.WARNING, FILE,
                 10, 20, 0, 8,
                 "Title", "Message", "Details", this::getEnv))
                 .contains("#### :warning: &nbsp; Title", "Message", "Details",
                         "[Assignment.java(L10-L20)]",
                         URL + "/blob/" + SHA + "/" + FILE + "#L10-L20");
-        assertThat(createMarkdownMessage(
+        assertThat(builder.createMarkdownMessage(
                 CommentType.WARNING, FILE,
                 10, 10, 0, 8,
                 "Title", "Message", "Details", this::getEnv))
