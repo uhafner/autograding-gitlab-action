@@ -33,10 +33,10 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
         this.log = log;
 
         maxWarningComments = getIntegerEnvironment("MAX_WARNING_COMMENTS");
-        log.logInfo(">>>> MAX_WARNING_COMMENTS: ", getMaxWarningComments());
+        log.logInfo(">>>> MAX_WARNING_COMMENTS: %d", getMaxWarningComments());
 
         maxCoverageComments = getIntegerEnvironment("MAX_COVERAGE_COMMENTS");
-        log.logInfo(">>>> MAX_COVERAGE_COMMENTS: ", getMaxCoverageComments());
+        log.logInfo(">>>> MAX_COVERAGE_COMMENTS: %d", getMaxCoverageComments());
     }
 
     @Override
