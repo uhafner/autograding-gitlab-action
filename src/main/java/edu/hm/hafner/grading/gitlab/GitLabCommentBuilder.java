@@ -33,10 +33,7 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
         this.log = log;
 
         maxWarningComments = getIntegerEnvironment("MAX_WARNING_COMMENTS");
-        log.logInfo(">>>> MAX_WARNING_COMMENTS: %d", getMaxWarningComments());
-
         maxCoverageComments = getIntegerEnvironment("MAX_COVERAGE_COMMENTS");
-        log.logInfo(">>>> MAX_COVERAGE_COMMENTS: %d", getMaxCoverageComments());
     }
 
     @Override
@@ -100,6 +97,12 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
     }
 
     private int getIntegerEnvironment(final String key) {
+        var value = getIntegerEnvironmentWithDefault(key);
+        log.logInfo(">>>> %s: %d", key, value);
+        return value;
+    }
+
+    private int getIntegerEnvironmentWithDefault(final String key) {
         var value = getEnv(key);
         try {
             return Integer.parseInt(value);
