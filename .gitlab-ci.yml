@@ -1,0 +1,155 @@
+workflow:
+  name: CI
+
+image:
+  name: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/maven:3.9.6-eclipse-temurin-21-alpine
+
+stages:
+  - build
+  - test
+  - grading
+
+build:
+  stage: build
+  artifacts:
+    when: always
+    paths:
+      - target
+  script:
+    - mvn -V --color always -ntp -fae test-compile
+
+analysis:
+  stage: test
+  artifacts:
+    when: always
+    paths:
+      - target
+  script:
+    - mvn -V --color always -ntp verify -DskipTests -DskipITs
+
+test:
+  stage: test
+  needs:
+    - analysis
+  artifacts:
+    when: always
+    paths:
+      - target
+  script:
+    - mvn -V --color always -ntp -fae verify
+
+pitest:
+  stage: test
+  needs:
+    - test
+  artifacts:
+    when: always
+    paths:
+      - target
+  script:
+    - mvn -V --color always -ntp org.pitest:pitest-maven:mutationCoverage
+
+autograding:
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/uhafner/autograding-gitlab-action:v1
+  stage: grading
+  when: always
+  script:
+    - java -cp @/app/jib-classpath-file edu.hm.hafner.grading.gitlab.GitLabAutoGradingRunner
+  variables:
+    MAX_WARNING_COMMENTS: 10
+    MAX_COVERAGE_COMMENTS: 10
+    CONFIG: |
+      {
+        "tests": {
+          "name": "Tests",
+          "tools": [
+            {
+              "id": "test",
+              "name": "Tests",
+              "pattern": "**/target/*-reports/TEST*.xml"
+            }
+          ],
+          "passedImpact": 0,
+          "skippedImpact": -1,
+          "failureImpact": -5,
+          "maxScore": 100
+        },
+        "analysis": [
+          {
+            "name": "Style",
+            "id": "style",
+            "tools": [
+              {
+                "id": "checkstyle",
+                "name": "CheckStyle",
+                "pattern": "**/target/checkstyle-*/checkstyle-result.xml"
+              },
+              {
+                "id": "pmd",
+                "name": "PMD",
+                "pattern": "**/target/pmd-*/pmd.xml"
+              }
+            ],
+            "errorImpact": -1,
+            "highImpact": -1,
+            "normalImpact": -1,
+            "lowImpact": -1,
+            "maxScore": 100
+          },
+          {
+            "name": "Bugs",
+            "id": "bugs",
+            "icon": "bug",
+            "tools": [
+              {
+                "id": "spotbugs",
+                "name": "SpotBugs",
+                "sourcePath": "src/main/java",
+                "pattern": "**/target/spotbugsXml.xml"
+              }
+            ],
+            "errorImpact": -3,
+            "highImpact": -3,
+            "normalImpact": -3,
+            "lowImpact": -3,
+            "maxScore": 100
+          }
+        ],
+        "coverage": [
+          {
+            "name": "Code Coverage",
+            "tools": [
+              {
+                "id": "jacoco",
+                "name": "Line Coverage",
+                "metric": "line",
+                "sourcePath": "src/main/java",
+                "pattern": "**/target/site/jacoco/jacoco.xml"
+              },
+              {
+                "id": "jacoco",
+                "name": "Branch Coverage",
+                "metric": "branch",
+                "sourcePath": "src/main/java",
+                "pattern": "**/target/site/jacoco/jacoco.xml"
+              }
+            ],
+            "maxScore": 100,
+            "missedPercentageImpact": -1
+          },
+          {
+            "name": "Mutation Coverage",
+            "tools": [
+              {
+                "id": "pit",
+                "name": "Mutation Coverage",
+                "metric": "mutation",
+                "sourcePath": "src/main/java",
+                "pattern": "**/target/pit-reports/mutations.xml"
+              }
+            ],
+            "maxScore": 100,
+            "missedPercentageImpact": -1
+          }
+        ]
+      }
