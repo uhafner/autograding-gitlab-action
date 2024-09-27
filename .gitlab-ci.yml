@@ -1,5 +1,7 @@
 workflow:
   name: CI
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
 
 image:
   name: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/maven:3.9.6-eclipse-temurin-21-alpine
@@ -58,6 +60,7 @@ autograding:
   variables:
     MAX_WARNING_COMMENTS: 10
     MAX_COVERAGE_COMMENTS: 10
+    SKIP_COMMIT_COMMENTS: true
     CONFIG: |
       {
         "tests": {

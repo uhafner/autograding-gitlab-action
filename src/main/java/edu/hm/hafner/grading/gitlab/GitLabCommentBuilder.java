@@ -20,6 +20,8 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
     private final CommitsApi commitsApi;
     private final int maxCoverageComments;
     private final int maxWarningComments;
+    private final boolean hideWarningDescription;
+    private final boolean skipCommitComments;
 
     @VisibleForTesting
     GitLabCommentBuilder() {
@@ -32,8 +34,11 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
         this.commitsApi = commitsApi;
         this.log = log;
 
-        maxWarningComments = getIntegerEnvironment("MAX_WARNING_COMMENTS");
-        maxCoverageComments = getIntegerEnvironment("MAX_COVERAGE_COMMENTS");
+        var env = new Environment(log);
+        maxWarningComments = env.getInteger("MAX_WARNING_COMMENTS");
+        maxCoverageComments = env.getInteger("MAX_COVERAGE_COMMENTS");
+        hideWarningDescription = env.getBoolean("SKIP_WARNING_DESCRIPTION");
+        skipCommitComments = env.getBoolean("SKIP_COMMIT_COMMENTS");
     }
 
     @Override
@@ -44,6 +49,15 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
     @Override
     protected int getMaxCoverageComments() {
         return maxCoverageComments;
+    }
+
+    @Override
+    protected boolean isWarningDescriptionHidden() {
+        return hideWarningDescription;
+    }
+
+    public boolean showCommentsInCommit() {
+        return !skipCommitComments;
     }
 
     @SuppressWarnings("checkstyle:ParameterNumber")
@@ -96,29 +110,6 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
         return "(%s:%s)".formatted(range, columns);
     }
 
-    private int getIntegerEnvironment(final String key) {
-        var value = getIntegerEnvironmentWithDefault(key);
-        log.logInfo(">>>> %s: %d", key, value);
-        return value;
-    }
-
-    private int getIntegerEnvironmentWithDefault(final String key) {
-        var value = getEnv(key);
-        try {
-            return Integer.parseInt(value);
-        }
-        catch (NumberFormatException exception) {
-            if (StringUtils.isEmpty(value)) {
-                log.logInfo(">>>> Environment variable %s not set, falling back to default Integer.MAX_VALUE", key);
-            }
-            else {
-                log.logError(">>>> Error: no integer value in environment variable key %s: %s", key, value);
-            }
-
-            return Integer.MAX_VALUE;
-        }
-    }
-
     protected FilteredLog getLog() {
         return log;
     }
@@ -127,7 +118,7 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
         return commitsApi;
     }
 
-    String getEnv(final String name) {
+    final String getEnv(final String name) {
         return StringUtils.defaultString(System.getenv(name));
     }
 }
