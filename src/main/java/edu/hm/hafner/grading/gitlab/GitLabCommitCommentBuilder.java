@@ -31,14 +31,16 @@ class GitLabCommitCommentBuilder extends GitLabCommentBuilder {
             final String message, final String title,
             final int columnStart, final int columnEnd,
             final String details, final String markDownDetails) {
-        try {
-            var markdownMessage = createMarkdownMessage(commentType, relativePath, lineStart,
-                    lineEnd, columnStart, columnEnd, title, message, markDownDetails, this::getEnv);
+        if (showCommentsInCommit()) {
+            try {
+                var markdownMessage = createMarkdownMessage(commentType, relativePath, lineStart,
+                        lineEnd, columnStart, columnEnd, title, message, markDownDetails, this::getEnv);
 
-            getCommitsApi().addComment(projectId, sha, markdownMessage, relativePath, lineStart, LineType.NEW);
-        }
-        catch (GitLabApiException exception) {
-            getLog().logException(exception, "Can't create commit comment for %s", relativePath);
+                getCommitsApi().addComment(projectId, sha, markdownMessage, relativePath, lineStart, LineType.NEW);
+            }
+            catch (GitLabApiException exception) {
+                getLog().logException(exception, "Can't create commit comment for %s", relativePath);
+            }
         }
     }
 }

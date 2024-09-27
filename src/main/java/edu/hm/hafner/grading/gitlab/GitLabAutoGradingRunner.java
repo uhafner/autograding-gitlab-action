@@ -42,13 +42,14 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
 
     @Override
     protected void publishGradingResult(final AggregatedScore score, final FilteredLog log) {
-        var gitlabUrl = getEnv("CI_SERVER_URL", log);
+        var env = new Environment(log);
+        var gitlabUrl = env.getString("CI_SERVER_URL");
         if (StringUtils.isBlank(gitlabUrl)) {
             log.logError("No CI_SERVER_URL defined - skipping");
 
             return;
         }
-        String oAuthToken = getEnv("GITLAB_TOKEN", log);
+        String oAuthToken = env.getString("GITLAB_TOKEN");
         if (oAuthToken.isBlank()) {
             log.logError("No valid GITLAB_TOKEN found - skipping");
 
@@ -59,14 +60,14 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
             gitLabApi.setRequestTimeout(1000, 2000);
             gitLabApi.enableRequestResponseLogging(Level.FINE, 4096);
 
-            String projectId = getEnv("CI_PROJECT_ID", log);
+            String projectId = env.getString("CI_PROJECT_ID");
             if (projectId.isBlank() || !StringUtils.isNumeric(projectId)) {
                 log.logError("No valid CI_PROJECT_ID found - skipping");
 
                 return;
             }
 
-            String sha = getEnv("CI_COMMIT_SHA", log);
+            String sha = env.getString("CI_COMMIT_SHA");
             if (sha.isBlank()) {
                 log.logError("No valid CI_COMMIT_SHA found - skipping");
 
@@ -75,7 +76,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
 
             var project = gitLabApi.getProjectApi().getProject(Long.parseLong(projectId));
 
-            grade(score, gitLabApi, project, sha, log);
+            grade(score, gitLabApi, project, sha, env, log);
         }
         catch (GitLabApiException exception) {
             log.logException(exception, "Error while accessing GitLab API");
@@ -83,40 +84,57 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
     }
 
     private void grade(final AggregatedScore score, final GitLabApi gitLabApi, final Project project, final String sha,
-            final FilteredLog log) throws GitLabApiException {
+            final Environment env, final FilteredLog log) throws GitLabApiException {
         var report = new GradingReport();
-        var comment = getEnv("SKIP_DETAILS", log).isEmpty()
-                ? report.getMarkdownDetails(score, getTitleName())
-                : report.getMarkdownSummary(score, getTitleName());
+        var comment = env.getBoolean("SKIP_DETAILS")
+                ? report.getMarkdownSummary(score, getTitleName())
+                : report.getMarkdownDetails(score, getTitleName());
         comment = AUTOGRADING_MARKER + "\n\n" + comment + "\n\nCreated by " + getAutogradingVersionLink(log);
-        String mergeRequestEnvironment = getEnv("CI_MERGE_REQUEST_IID", log);
+        String mergeRequestEnvironment = env.getString("CI_MERGE_REQUEST_IID");
         if (mergeRequestEnvironment.isBlank() || !StringUtils.isNumeric(mergeRequestEnvironment)) {
-            createLineCommentsOnCommit(score, log, gitLabApi, project, sha);
-
-            createCommentOnCommit(gitLabApi, project, sha, comment);
-        }
-        else {
-            var mergeRequestId = Long.parseLong(mergeRequestEnvironment);
-
-            deleteExistingComments(gitLabApi, project, mergeRequestId, log);
-
-            var versions = gitLabApi.getMergeRequestApi()
-                    .getDiffVersions(project.getId(), mergeRequestId);
-            if (versions.isEmpty()) {
-                log.logInfo("Diff versions are empty, adding line comments to commit");
-                createLineCommentsOnCommit(score, log, gitLabApi, project, sha);
+            if (showCommentsInCommit(log)) {
+                commentCommit(score, gitLabApi, project, sha, env, log, comment);
             }
             else {
-                log.logInfo("Diff versions found, adding line comments to merge request diff");
-                var mergeRequest = gitLabApi.getMergeRequestApi()
-                        .getMergeRequest(project.getId(), mergeRequestId);
-                createLineCommentsOnDiff(score, log, gitLabApi.getCommitsApi(), gitLabApi.getDiscussionsApi(),
-                        mergeRequest, versions.get(0));
+                log.logInfo("Skipping comments on single commit");
             }
-
-            createCommentOnMergeRequest(gitLabApi, project, mergeRequestEnvironment, comment, log);
+        }
+        else {
+            commentMergeRequest(score, gitLabApi, project, sha, env, log, mergeRequestEnvironment, comment);
         }
         log.logInfo("GitLab Action has finished");
+    }
+
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    private void commentMergeRequest(final AggregatedScore score, final GitLabApi gitLabApi, final Project project,
+            final String sha, final Environment env, final FilteredLog log, final String mergeRequestEnvironment,
+            final String comment) throws GitLabApiException {
+        var mergeRequestId = Long.parseLong(mergeRequestEnvironment);
+
+        deleteExistingComments(gitLabApi, project, mergeRequestId, log);
+
+        var versions = gitLabApi.getMergeRequestApi()
+                .getDiffVersions(project.getId(), mergeRequestId);
+        if (versions.isEmpty()) {
+            log.logInfo("Diff versions are empty, adding line comments to commit");
+            createLineCommentsOnCommit(gitLabApi, project, sha, score, env, log);
+        }
+        else {
+            log.logInfo("Diff versions found, adding line comments to merge request diff");
+            var mergeRequest = gitLabApi.getMergeRequestApi()
+                    .getMergeRequest(project.getId(), mergeRequestId);
+            createLineCommentsOnDiff(gitLabApi.getCommitsApi(), gitLabApi.getDiscussionsApi(), mergeRequest,
+                    versions.get(0), score, env, log);
+        }
+
+        createCommentOnMergeRequest(gitLabApi, project, mergeRequestEnvironment, comment, log);
+    }
+
+    private void commentCommit(final AggregatedScore score, final GitLabApi gitLabApi, final Project project,
+            final String sha, final Environment env, final FilteredLog log, final String comment)
+            throws GitLabApiException {
+        createLineCommentsOnCommit(gitLabApi, project, sha, score, env, log);
+        createCommentOnCommit(gitLabApi, project, sha, comment);
     }
 
     private String getAutogradingVersionLink(final FilteredLog log) {
@@ -130,12 +148,12 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         return StringUtils.defaultIfBlank(System.getenv("DISPLAY_NAME"), "Autograding score");
     }
 
-    private void createLineCommentsOnDiff(final AggregatedScore score, final FilteredLog log,
-            final CommitsApi commitsApi, final DiscussionsApi discussionsApi, final MergeRequest mergeRequest,
-            final MergeRequestVersion lastVersion) {
-        if (canCreateLineComments(log)) {
+    private void createLineCommentsOnDiff(final CommitsApi commitsApi, final DiscussionsApi discussionsApi,
+            final MergeRequest mergeRequest, final MergeRequestVersion lastVersion,
+            final AggregatedScore score, final Environment env, final FilteredLog log) {
+        if (canCreateLineComments(env)) {
             var annotationBuilder = new GitLabDiffCommentBuilder(commitsApi, discussionsApi, mergeRequest, lastVersion,
-                    getWorkingDirectory(log), log);
+                    getWorkingDirectory(env), log);
             annotationBuilder.createAnnotations(score);
         }
         else {
@@ -143,11 +161,11 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         }
     }
 
-    private void createLineCommentsOnCommit(final AggregatedScore score, final FilteredLog log, final GitLabApi gitLabApi,
-            final Project project, final String sha) {
-        if (canCreateLineComments(log)) {
+    private void createLineCommentsOnCommit(final GitLabApi gitLabApi, final Project project, final String sha,
+            final AggregatedScore score, final Environment env, final FilteredLog log) {
+        if (canCreateLineComments(env)) {
             var commentBuilder = new GitLabCommitCommentBuilder(gitLabApi.getCommitsApi(), project.getId(), sha,
-                    getWorkingDirectory(log), log);
+                    getWorkingDirectory(env), log);
             commentBuilder.createAnnotations(score);
         }
         else {
@@ -155,12 +173,12 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         }
     }
 
-    private String getWorkingDirectory(final FilteredLog log) {
-        return getEnv("CI_PROJECT_DIR", log) + "/";
+    private String getWorkingDirectory(final Environment env) {
+        return env.getString("CI_PROJECT_DIR") + "/";
     }
 
-    private boolean canCreateLineComments(final FilteredLog log) {
-        return getEnv("SKIP_LINE_COMMENTS", log).isEmpty();
+    private boolean canCreateLineComments(final Environment env) {
+        return !env.getBoolean("SKIP_LINE_COMMENTS");
     }
 
     private void deleteExistingComments(final GitLabApi gitLabApi, final Project project,
@@ -198,9 +216,10 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         gitLabApi.getCommitsApi().addComment(project.getId(), sha, comment);
     }
 
-    private static String getEnv(final String key, final FilteredLog log) {
-        String value = StringUtils.defaultString(System.getenv(key));
-        log.logInfo(">>>> " + key + ": " + value);
-        return value;
+    private boolean showCommentsInCommit(final FilteredLog log) {
+        var name = "SKIP_COMMIT_COMMENTS";
+        var defined = StringUtils.isNotBlank(System.getenv(name));
+        log.logInfo(">>>> %s: %b", name, defined);
+        return !defined;
     }
 }

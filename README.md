@@ -67,10 +67,12 @@ This action can be configured using the following environment variables (see exa
 - ``GITLAB_TOKEN``: mandatory GitLab access token, see next section for details.
 - ``CONFIG: "{...}"``: optional configuration, see next sections for details, or consult the [autograding-model](https://github.com/uhafner/autograding-model) project for the exact implementation. If not specified, a [default configuration](https://github.com/uhafner/autograding-model/blob/main/src/main/resources/default-config.json) will be used.
 - ``DISPLAY_NAME: "Name in the comment title"``: optional name in the comment title (overwrites the default: "Autograding score").
-- ``SKIP_LINE_COMMENTS: true``: Optional flag to skip the creation of commit comments at specific lines (for warnings and missed coverage). By default, line comments are created.
+- ``SKIP_LINE_COMMENTS: true``: Optional flag to skip the creation of commit comments at specific lines (for warnings and missed coverage). By default, line comments are created. Alternatively, you can limit the number of comments by setting the following parameters.
 - ``MAX_WARNING_COMMENTS: <number>``: Optional parameter to limit the number of warning comments at specific lines. By default, all line comments are created.
 - ``MAX_COVERAGE_COMMENTS: <number>``: Optional parameter to limit the number of coverage comments at specific lines. By default, all line comments are created.
 - ``SKIP_DETAILS: true``: Optional flag to skip the details of the results (e.g., stack trace of failed tests, autograding detail tables) in the commit or merge request comment. By default, the detailed report is created.
+- ``SKIP_WARNING_DESCRIPTION: true``: Optional flag to skip the adding of warning descriptions for static analysis warnings. By default, the descriptions are added. Since static analysis tools like CheckStyle or SpotBugs have lengthy descriptions, it makes sense to skip the descriptions if you have many warnings.
+- ``SKIP_COMMIT_COMMENTS: true``: Optional flag to skip the creation of comments in commits. When this option is enabled, then comments are only added to merge requests. By default, comments are created for commits and merge requests. When all your changes are integrated in merge requests, then you can skip the commit comments to reduce the noise in the merge request: in this case, the comments in the merge request will be replaced with the results of the latest commit only.
 
 ## GitLab Access Token
 
