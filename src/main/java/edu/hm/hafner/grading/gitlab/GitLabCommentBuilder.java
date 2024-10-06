@@ -24,6 +24,7 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
     private final boolean skipCommitComments;
 
     @VisibleForTesting
+    @SuppressWarnings("NullAway")
     GitLabCommentBuilder() {
         this(null, new FilteredLog("Errors"));
     }
