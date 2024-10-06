@@ -23,6 +23,11 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
     private final boolean hideWarningDescription;
     private final boolean skipCommitComments;
 
+    @VisibleForTesting
+    GitLabCommentBuilder() {
+        this(null, new FilteredLog("Errors"));
+    }
+
     GitLabCommentBuilder(final CommitsApi commitsApi, final FilteredLog log, final String... prefixesToRemove) {
         super(prefixesToRemove);
 
