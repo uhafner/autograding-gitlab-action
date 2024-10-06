@@ -197,7 +197,7 @@ public class GitLabAutoGradingRunnerDockerITest {
     }
 
     private GenericContainer<?> createContainer() {
-        return new GenericContainer<>(DockerImageName.parse("uhafner/autograding-gitlab-action:2.1.0-SNAPSHOT"));
+        return new GenericContainer<>(DockerImageName.parse("uhafner/autograding-gitlab-action:ParserRegistry.Type."));
     }
 
     private String readStandardOut(final GenericContainer<? extends GenericContainer<?>> container) throws TimeoutException {
