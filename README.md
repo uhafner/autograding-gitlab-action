@@ -117,7 +117,27 @@ This metric can be configured using a JSON object `tests`, see the example below
 }
 ``` 
 
-You can either count passed tests as positive impact or failed tests as negative impact (or use a mix of both). Skipped tests will be listed individually. For failed tests, the test error message and stack trace will be shown directly after the summary in the pull request.
+You can either count passed tests as positive impact or failed tests as negative impact (or use a mix of both). Alternatively, you can use the success or failure rate of the tests to compute the impact. This approach is shown in the next example:
+
+```json
+{
+  "tests": {
+    "tools": [
+      {
+        "id": "test",
+        "name": "Unittests",
+        "pattern": "**/junit*.xml"
+      }
+    ],
+    "name": "JUnit",
+    "successRateImpact": 1,
+    "failureRateImpact": 0,
+    "maxScore": 100
+  }
+}
+``` 
+
+Skipped tests will be listed in the details view individually. For failed tests, the test error message and stack trace will be shown directly after the summary in the merge request.
 
 ## Code or mutation coverage (e.g., line coverage percentage)
 
