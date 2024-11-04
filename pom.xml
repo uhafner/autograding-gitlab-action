@@ -33,7 +33,7 @@
     <jib-maven-plugin.version>3.4.3</jib-maven-plugin.version>
     <testcontainers.version>1.20.2</testcontainers.version>
 
-    <autograding-model.version>3.37.0</autograding-model.version>
+    <autograding-model.version>4.1.0</autograding-model.version>
   </properties>
 
   <dependencies>
