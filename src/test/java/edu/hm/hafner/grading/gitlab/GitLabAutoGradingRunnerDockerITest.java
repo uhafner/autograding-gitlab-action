@@ -1,14 +1,14 @@
 package edu.hm.hafner.grading.gitlab;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.ToStringConsumer;
 import org.testcontainers.containers.output.WaitingConsumer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -78,13 +78,11 @@ public class GitLabAutoGradingRunnerDockerITest {
                   "tools": [
                       {
                         "id": "jacoco",
-                        "name": "Line Coverage",
                         "metric": "line",
                         "pattern": "**/jacoco.xml"
                       },
                       {
                         "id": "jacoco",
-                        "name": "Branch Coverage",
                         "metric": "branch",
                         "pattern": "**/jacoco.xml"
                       }
@@ -175,7 +173,7 @@ public class GitLabAutoGradingRunnerDockerITest {
                     .contains(new String[] {
                             "Processing 1 test configuration(s)",
                             "-> Tests Total: TESTS: 0 tests",
-                            "Configuration error for 'Tests'?",
+                            "Configuration error for 'JUnit Tests'?",
                             "Tests Score: 100 of 100",
                             "Processing 2 coverage configuration(s)",
                             "=> Code Coverage Score: 0 of 100",
@@ -197,7 +195,7 @@ public class GitLabAutoGradingRunnerDockerITest {
     }
 
     private GenericContainer<?> createContainer() {
-        return new GenericContainer<>(DockerImageName.parse("uhafner/autograding-gitlab-action:2.3.0-SNAPSHOT"));
+        return new GenericContainer<>(DockerImageName.parse("uhafner/autograding-gitlab-action:3.0.0-SNAPSHOT"));
     }
 
     private String readStandardOut(final GenericContainer<? extends GenericContainer<?>> container) throws TimeoutException {

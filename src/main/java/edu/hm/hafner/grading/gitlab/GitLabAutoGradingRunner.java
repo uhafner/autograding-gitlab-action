@@ -1,7 +1,5 @@
 package edu.hm.hafner.grading.gitlab;
 
-import java.util.logging.Level;
-
 import org.apache.commons.lang3.StringUtils;
 import org.gitlab4j.api.CommitsApi;
 import org.gitlab4j.api.DiscussionsApi;
@@ -16,6 +14,8 @@ import edu.hm.hafner.grading.AggregatedScore;
 import edu.hm.hafner.grading.AutoGradingRunner;
 import edu.hm.hafner.grading.GradingReport;
 import edu.hm.hafner.util.FilteredLog;
+
+import java.util.logging.Level;
 
 /**
  * GitLab action entrypoint for the autograding action.
@@ -198,7 +198,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         var mergeRequestIid = Long.parseLong(mergeRequestId);
 
         log.logInfo("Creating merge request note");
-        gitLabApi.getNotesApi().createMergeRequestNote(projectId, mergeRequestIid, comment);
+        gitLabApi.getNotesApi().createMergeRequestNote(projectId, mergeRequestIid, comment, null, false);
     }
 
     private void delete(final GitLabApi gitLabApi, final Note note,
