@@ -10,7 +10,12 @@ import org.mockito.ArgumentCaptor;
 
 import edu.hm.hafner.analysis.IssueBuilder;
 import edu.hm.hafner.analysis.Report;
+import edu.hm.hafner.coverage.ModuleNode;
+import edu.hm.hafner.coverage.Node;
 import edu.hm.hafner.grading.AggregatedScore;
+import edu.hm.hafner.grading.AnalysisConfiguration;
+import edu.hm.hafner.grading.ToolConfiguration;
+import edu.hm.hafner.grading.ToolParser;
 import edu.hm.hafner.util.FilteredLog;
 
 import static edu.hm.hafner.grading.gitlab.GitLabDiffCommentBuilder.*;
@@ -128,8 +133,8 @@ class GitLabDiffCommentBuilderTest {
         var gitlab = new GitLabDiffCommentBuilder(commits, discussions, mock(MergeRequest.class), mock(
                         MergeRequestVersion.class), "/work", new FilteredLog("GitLab"));
 
-        var score = new AggregatedScore(ANALYSIS_CONFIGURATION, new FilteredLog("Tests"));
-        score.gradeAnalysis((tool, log) -> createReport());
+        var score = new AggregatedScore(new FilteredLog("Tests"));
+        score.gradeAnalysis(new ReportGenerator(), AnalysisConfiguration.from(ANALYSIS_CONFIGURATION));
 
         gitlab.createAnnotations(score);
 
@@ -145,21 +150,33 @@ class GitLabDiffCommentBuilderTest {
                         "that is defined in the same class.");
     }
 
-    private Report createReport() {
-        var report = new Report();
-        try (var builder = new IssueBuilder()) {
-            report.add(builder.setFileName(FILE_NAME)
-                    .setLineStart(10)
-                    .setLineEnd(100)
-                    .setOrigin("checkstyle")
-                    .setOriginName("CheckStyle")
-                    .setMessage("Message")
-                    .setCategory("Title")
-                    .setType("HiddenField")
-                    .setColumnStart(1)
-                    .setColumnEnd(10)
-                    .build());
+    private static class ReportGenerator implements ToolParser {
+        @Override
+        public Report readReport(final ToolConfiguration tool, final FilteredLog log) {
+            return createReport();
         }
-        return report;
+
+        private Report createReport() {
+            var report = new Report();
+            try (var builder = new IssueBuilder()) {
+                report.add(builder.setFileName(FILE_NAME)
+                        .setLineStart(10)
+                        .setLineEnd(100)
+                        .setOrigin("checkstyle")
+                        .setOriginName("CheckStyle")
+                        .setMessage("Message")
+                        .setCategory("Title")
+                        .setType("HiddenField")
+                        .setColumnStart(1)
+                        .setColumnEnd(10)
+                        .build());
+            }
+            return report;
+        }
+
+        @Override
+        public Node readNode(final ToolConfiguration configuration, final FilteredLog log) {
+            return new ModuleNode("module");
+        }
     }
 }

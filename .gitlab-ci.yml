@@ -4,7 +4,7 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
 
 image:
-  name: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/maven:3.9.6-eclipse-temurin-21-alpine
+  name: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/maven:3.9.9-eclipse-temurin-21-alpine
 
 stages:
   - build
@@ -18,7 +18,7 @@ build:
     paths:
       - target
   script:
-    - mvn -V --color always -ntp -fae test-compile
+    - mvn -V --color always -ntp -fae test-compile -Pci
 
 analysis:
   stage: test
@@ -27,7 +27,7 @@ analysis:
     paths:
       - target
   script:
-    - mvn -V --color always -ntp verify -DskipTests -DskipITs
+    - mvn -V --color always -ntp verify -Pci -DskipTests -DskipITs
 
 test:
   stage: test
@@ -38,7 +38,7 @@ test:
     paths:
       - target
   script:
-    - mvn -V --color always -ntp -fae verify
+    - mvn -V --color always -ntp -fae verify -Pci
 
 pitest:
   stage: test
@@ -49,10 +49,10 @@ pitest:
     paths:
       - target
   script:
-    - mvn -V --color always -ntp org.pitest:pitest-maven:mutationCoverage
+    - mvn -V --color always -ntp -Pci -Ppit
 
 autograding:
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/uhafner/autograding-gitlab-action:v1
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/uhafner/autograding-gitlab-action:v3
   stage: grading
   when: always
   script:
@@ -65,16 +65,15 @@ autograding:
       {
         "tests": {
           "name": "Tests",
+          "id": "tests",
           "tools": [
             {
-              "id": "test",
-              "name": "Tests",
+              "id": "junit",
+              "name": "JUnit Tests",
               "pattern": "**/target/*-reports/TEST*.xml"
             }
           ],
-          "passedImpact": 0,
-          "skippedImpact": -1,
-          "failureImpact": -5,
+          "failureRateImpact": -1,
           "maxScore": 100
         },
         "analysis": [
@@ -124,14 +123,12 @@ autograding:
             "tools": [
               {
                 "id": "jacoco",
-                "name": "Line Coverage",
                 "metric": "line",
                 "sourcePath": "src/main/java",
                 "pattern": "**/target/site/jacoco/jacoco.xml"
               },
               {
                 "id": "jacoco",
-                "name": "Branch Coverage",
                 "metric": "branch",
                 "sourcePath": "src/main/java",
                 "pattern": "**/target/site/jacoco/jacoco.xml"
@@ -145,8 +142,13 @@ autograding:
             "tools": [
               {
                 "id": "pit",
-                "name": "Mutation Coverage",
                 "metric": "mutation",
+                "sourcePath": "src/main/java",
+                "pattern": "**/target/pit-reports/mutations.xml"
+              },
+              {
+                "id": "pit",
+                "metric": "test-strength",
                 "sourcePath": "src/main/java",
                 "pattern": "**/target/pit-reports/mutations.xml"
               }

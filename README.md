@@ -36,23 +36,22 @@ build:
     - mvn -V --color always -ntp clean verify -Dmaven.test.failure.ignore=true -Ppit
 
 test:
-  image: uhafner/autograding-gitlab-action:v1 # Or use a specific tag like 1.9.0
+  image: uhafner/autograding-gitlab-action:v3 # Or use a specific tag like 3.0.0
   stage: test
   variables: 
     # You need to provide a GitLab access token as CI/CD Variable GITLAB_TOKEN in the GitLab user interface 
-    CONFIG: > # Override default configuration: just grade the test results
+    CONFIG: > # Override default configuration: grade only the test results
       {
       "tests": {
         "tools": [
           {
-            "id": "test",
+            "id": "junit",
             "name": "Unittests",
             "pattern": "**/target/*-reports/TEST*.xml"
           }
         ],
         "name": "Unit and integration tests",
-        "skippedImpact": -1,
-        "failureImpact": -5,
+        "failureRateImpact": -1,
         "maxScore": 100
         }
       }
@@ -103,7 +102,7 @@ This metric can be configured using a JSON object `tests`, see the example below
   "tests": {
     "tools": [
       {
-        "id": "test",
+        "id": "junit",
         "name": "Unittests",
         "pattern": "**/junit*.xml"
       }
@@ -124,7 +123,7 @@ You can either count passed tests as positive impact or failed tests as negative
   "tests": {
     "tools": [
       {
-        "id": "test",
+        "id": "junit",
         "name": "Unittests",
         "pattern": "**/junit*.xml"
       }

@@ -1,14 +1,14 @@
 package edu.hm.hafner.grading.gitlab;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.ToStringConsumer;
 import org.testcontainers.containers.output.WaitingConsumer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -23,7 +23,7 @@ public class GitLabAutoGradingRunnerDockerITest {
               "tests": {
                 "tools": [
                   {
-                    "id": "test",
+                    "id": "junit",
                     "name": "Unittests",
                     "pattern": "**/target/*-reports/TEST*.xml"
                   }
@@ -78,13 +78,11 @@ public class GitLabAutoGradingRunnerDockerITest {
                   "tools": [
                       {
                         "id": "jacoco",
-                        "name": "Line Coverage",
                         "metric": "line",
                         "pattern": "**/jacoco.xml"
                       },
                       {
                         "id": "jacoco",
-                        "name": "Branch Coverage",
                         "metric": "branch",
                         "pattern": "**/jacoco.xml"
                       }
@@ -122,7 +120,7 @@ public class GitLabAutoGradingRunnerDockerITest {
                     .contains("Obtaining configuration from environment variable CONFIG")
                     .contains(new String[] {
                             "Processing 1 test configuration(s)",
-                            "-> Unittests Total: TESTS: 1 tests",
+                            "-> Unittests Total: TESTS: 1",
                             "JUnit Score: 10 of 100",
                             "Processing 2 coverage configuration(s)",
                             "-> Line Coverage Total: LINE: 10.93% (33/302)",
@@ -131,10 +129,10 @@ public class GitLabAutoGradingRunnerDockerITest {
                             "-> Mutation Coverage Total: MUTATION: 7.86% (11/140)",
                             "=> PIT Score: 16 of 100",
                             "Processing 2 static analysis configuration(s)",
-                            "-> CheckStyle Total: 1 warnings",
-                            "-> PMD Total: 1 warnings",
+                            "-> CheckStyle (checkstyle): 1 warning (normal: 1)",
+                            "-> PMD (pmd): 1 warning (normal: 1)",
                             "=> Style Score: 6 of 100",
-                            "-> SpotBugs Total: 1 warnings",
+                            "-> SpotBugs (spotbugs): 1 bug (low: 1)",
                             "=> Bugs Score: 86 of 100",
                             "Autograding score - 138 of 500"});
         }
@@ -149,21 +147,22 @@ public class GitLabAutoGradingRunnerDockerITest {
                     .contains("No configuration provided (environment variable CONFIG not set), using default configuration")
                     .contains(new String[] {
                             "Processing 1 test configuration(s)",
-                            "-> Tests Total: TESTS: 1 tests",
+                            "-> JUnit Tests Total: TESTS: 1",
                             "Tests Score: 100 of 100",
                             "Processing 2 coverage configuration(s)",
                             "-> Line Coverage Total: LINE: 10.93% (33/302)",
                             "-> Branch Coverage Total: BRANCH: 9.52% (4/42)",
                             "=> Code Coverage Score: 10 of 100",
                             "-> Mutation Coverage Total: MUTATION: 7.86% (11/140)",
-                            "=> Mutation Coverage Score: 8 of 100",
+                            "-> Test Strength Total: TEST_STRENGTH: 84.62% (11/13)",
+                            "=> Mutation Coverage Score: 46 of 100",
                             "Processing 2 static analysis configuration(s)",
-                            "-> CheckStyle Total: 1 warnings",
-                            "-> PMD Total: 1 warnings",
+                            "-> CheckStyle (checkstyle): 1 warning (normal: 1)",
+                            "-> PMD (pmd): 1 warning (normal: 1)",
                             "=> Style Score: 98 of 100",
-                            "-> SpotBugs Total: 1 warnings",
+                            "-> SpotBugs (spotbugs): 1 bug (low: 1)",
                             "=> Bugs Score: 97 of 100",
-                            "Autograding score - 313 of 500"});
+                            "Autograding score - 351 of 500 (70%)"});
         }
     }
 
@@ -174,30 +173,29 @@ public class GitLabAutoGradingRunnerDockerITest {
             assertThat(readStandardOut(container))
                     .contains(new String[] {
                             "Processing 1 test configuration(s)",
-                            "-> Tests Total: TESTS: 0 tests",
-                            "Configuration error for 'Tests'?",
-                            "Tests Score: 100 of 100",
+                            "=> Tests Score: 100 of 100",
+                            "Configuration error for 'JUnit Tests'?",
                             "Processing 2 coverage configuration(s)",
-                            "=> Code Coverage Score: 0 of 100",
+                            "=> Code Coverage Score: 100 of 100",
                             "Configuration error for 'Line Coverage'?",
                             "Configuration error for 'Branch Coverage'?",
-                            "=> Mutation Coverage Score: 0 of 100",
+                            "=> Mutation Coverage Score: 100 of 100",
                             "Configuration error for 'Mutation Coverage'?",
                             "Processing 2 static analysis configuration(s)",
                             "Configuration error for 'CheckStyle'?",
                             "Configuration error for 'PMD'?",
                             "Configuration error for 'SpotBugs'?",
-                            "-> CheckStyle Total: 0 warnings",
-                            "-> PMD Total: 0 warnings",
+                            "-> CheckStyle (checkstyle): No warnings",
+                            "-> PMD (pmd): No warnings",
                             "=> Style Score: 100 of 100",
-                            "-> SpotBugs Total: 0 warnings",
+                            "-> SpotBugs (spotbugs): No warnings",
                             "=> Bugs Score: 100 of 100",
-                            "Autograding score - 300 of 500"});
+                            "Autograding score - 500 of 500 (100%)"});
         }
     }
 
     private GenericContainer<?> createContainer() {
-        return new GenericContainer<>(DockerImageName.parse("uhafner/autograding-gitlab-action:2.3.0-SNAPSHOT"));
+        return new GenericContainer<>(DockerImageName.parse("uhafner/autograding-gitlab-action:3.0.0"));
     }
 
     private String readStandardOut(final GenericContainer<? extends GenericContainer<?>> container) throws TimeoutException {
