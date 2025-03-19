@@ -7,7 +7,7 @@
   <parent>
     <groupId>edu.hm.hafner</groupId>
     <artifactId>codingstyle-pom</artifactId>
-    <version>5.14.0</version>
+    <version>5.16.0</version>
     <relativePath/>
   </parent>
 
@@ -36,7 +36,7 @@
     <docker-image-tag>${project.version}</docker-image-tag>
     <docker-image-baseline>v3-SNAPSHOT</docker-image-baseline>
 
-    <autograding-model.version>6.1.0</autograding-model.version>
+    <autograding-model.version>6.2.0</autograding-model.version>
     <gitlab4j-api.version>5.8.0</gitlab4j-api.version>
     <testcontainers.version>1.20.6</testcontainers.version>
 
