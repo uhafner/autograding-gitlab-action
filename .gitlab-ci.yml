@@ -52,7 +52,7 @@ pitest:
     - mvn -V --color always -ntp -Pci -Ppit
 
 autograding:
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/uhafner/autograding-gitlab-action:v3
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/uhafner/autograding-gitlab-action:v3.2.0
   stage: grading
   when: always
   script:
