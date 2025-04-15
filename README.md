@@ -5,11 +5,19 @@
 
 This action autogrades projects based on a configurable set of metrics and gives feedback on merge requests (or single commits) in GitLab. I use this action to automatically grade student projects in my lectures at the Munich University of Applied Sciences.
 
-You can see the results of this action in the [example pull request](https://gitlab.lrz.de/dev/java2-assignment1/-/merge_requests/5) of a fake student project.  You will find another [GitLab pipeline example](.gitlab-ci.yml) in the top-level folder of this project.
+You can see the results of this action in two merge requests of a fake student project. Please note that the project is hosted on our university's private GitLab instance, so without a proper login, you will not be able to see the details of the merge requests. 
+
+- [Merge Request with some failures and warnings](https://gitlab.lrz.de/dev/gitlab-autograding-example/-/merge_requests/2)
+- [Merge Request with a score of 100 %](https://gitlab.lrz.de/dev/gitlab-autograding-example/-/merge_requests/1)
 
 ![Pull request comment](images/pr-comment.png)
 
-Please have a look at my [companion coding style](https://github.com/uhafner/codingstyle) and [Maven parent POM](https://github.com/uhafner/codingstyle-pom) to see how to create Java projects that can be graded using this GitLab action. If you are hosting your project on GitHub, then you might be interested in my [identical GitHub action](https://github.com/uhafner/autograding-github-action) as well.
+You will find a [GitLab pipeline example](.gitlab-ci.yml) in the top-level folder, which shows how to use this action in your own project.
+The example is based on a Java project that uses Maven as a build tool. 
+The action is not limited to Java projects, but can be used for any programming language that can generate the required report files (JUnit XML, JaCoCo XML, etc.).
+
+Please have a look at my [companion coding style](https://github.com/uhafner/codingstyle) and [Maven parent POM](https://github.com/uhafner/codingstyle-pom) to see how to create Java projects that can be graded using this GitLab action. 
+If you are hosting your project on GitHub, then you might be interested in my [similar GitHub action](https://github.com/uhafner/autograding-github-action) as well.
 
 Both actions are inspired by my Jenkins plugins: 
 - [Jenkins Warnings plugin](https://github.com/jenkinsci/warnings-ng-plugin)
