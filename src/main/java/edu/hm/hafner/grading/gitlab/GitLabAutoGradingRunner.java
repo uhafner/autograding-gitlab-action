@@ -121,10 +121,16 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         }
         else {
             log.logInfo("Diff versions found, adding line comments to merge request diff");
-            var mergeRequest = gitLabApi.getMergeRequestApi()
-                    .getMergeRequest(project.getId(), mergeRequestId);
-            createLineCommentsOnDiff(gitLabApi.getCommitsApi(), gitLabApi.getDiscussionsApi(), mergeRequest,
-                    versions.get(0), score, env, log);
+            try {
+                var mergeRequest = getMergeRequest(gitLabApi, project, mergeRequestId);
+                createLineCommentsOnDiff(gitLabApi.getCommitsApi(), gitLabApi.getDiscussionsApi(), mergeRequest,
+                        versions.get(0), score, env, log);
+            }
+            catch (GitLabApiException exception) {
+                log.logException(exception, "While commenting on merge request !%d diff, an error occurred. "
+                        + "Retrying to comment directly on the commit", mergeRequestId);
+                createLineCommentsOnCommit(gitLabApi, project, sha, score, env, log);
+            }
         }
 
         createCommentOnMergeRequest(gitLabApi, project, mergeRequestEnvironment, comment, log);
