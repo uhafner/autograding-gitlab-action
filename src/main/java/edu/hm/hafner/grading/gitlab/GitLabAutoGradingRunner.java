@@ -57,7 +57,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         }
 
         try (GitLabApi gitLabApi = new GitLabApi(gitlabUrl, oAuthToken)) {
-            gitLabApi.setRequestTimeout(1000, 2000);
+            gitLabApi.setRequestTimeout(5000, 10000);
             gitLabApi.enableRequestResponseLogging(Level.FINE, 4096);
 
             String projectId = env.getString("CI_PROJECT_ID");
@@ -134,6 +134,17 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         }
 
         createCommentOnMergeRequest(gitLabApi, project, mergeRequestEnvironment, comment, log);
+    }
+
+    private MergeRequest getMergeRequest(final GitLabApi gitLabApi, final Project project, final long mergeRequestId)
+            throws GitLabApiException {
+        var api = gitLabApi.getMergeRequestApi();
+        try {
+            return api.getMergeRequest(project.getId(), mergeRequestId);
+        }
+        catch (GitLabApiException exception) {
+            return api.getMergeRequest(project.getId(), mergeRequestId); // try again
+        }
     }
 
     private void commentCommit(final AggregatedScore score, final GitLabApi gitLabApi, final Project project,
