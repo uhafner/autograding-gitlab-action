@@ -5,6 +5,7 @@ import org.gitlab4j.api.CommitsApi;
 import org.gitlab4j.api.DiscussionsApi;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
+import org.gitlab4j.api.models.Discussion;
 import org.gitlab4j.api.models.MergeRequest;
 import org.gitlab4j.api.models.MergeRequestVersion;
 import org.gitlab4j.api.models.Note;
@@ -15,6 +16,7 @@ import edu.hm.hafner.grading.AutoGradingRunner;
 import edu.hm.hafner.grading.GradingReport;
 import edu.hm.hafner.util.FilteredLog;
 
+import java.util.Collection;
 import java.util.logging.Level;
 
 /**
@@ -185,9 +187,15 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
             final long mergeRequestId, final FilteredLog log) throws GitLabApiException {
         var projectId = project.getId();
 
-        log.logInfo("Deleting old auto-grading notes");
+        log.logInfo("Deleting old auto-grading merge request summary notes");
         gitLabApi.getNotesApi()
                 .getMergeRequestNotes(projectId, mergeRequestId).stream()
+                .filter(note -> note.getBody().startsWith(AUTOGRADING_MARKER))
+                .forEach(note -> delete(gitLabApi, note, projectId, mergeRequestId));
+        log.logInfo("Deleting old auto-grading merge request annotation notes");
+        gitLabApi.getDiscussionsApi()
+                .getMergeRequestDiscussions(projectId, mergeRequestId).stream()
+                .map(Discussion::getNotes).flatMap(Collection::stream)
                 .filter(note -> note.getBody().startsWith(AUTOGRADING_MARKER))
                 .forEach(note -> delete(gitLabApi, note, projectId, mergeRequestId));
     }
