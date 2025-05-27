@@ -59,7 +59,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         }
 
         try (GitLabApi gitLabApi = new GitLabApi(gitlabUrl, oAuthToken)) {
-            gitLabApi.setRequestTimeout(1000, 2000);
+            gitLabApi.setRequestTimeout(5000, 10000);
             gitLabApi.enableRequestResponseLogging(Level.FINE, 4096);
 
             String projectId = env.getString("CI_PROJECT_ID");
@@ -123,13 +123,30 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         }
         else {
             log.logInfo("Diff versions found, adding line comments to merge request diff");
-            var mergeRequest = gitLabApi.getMergeRequestApi()
-                    .getMergeRequest(project.getId(), mergeRequestId);
-            createLineCommentsOnDiff(gitLabApi.getCommitsApi(), gitLabApi.getDiscussionsApi(), mergeRequest,
-                    versions.get(0), score, env, log);
+            try {
+                var mergeRequest = getMergeRequest(gitLabApi, project, mergeRequestId);
+                createLineCommentsOnDiff(gitLabApi.getCommitsApi(), gitLabApi.getDiscussionsApi(), mergeRequest,
+                        versions.get(0), score, env, log);
+            }
+            catch (GitLabApiException exception) {
+                log.logException(exception, "While commenting on merge request !%d diff, an error occurred. "
+                        + "Retrying to comment directly on the commit", mergeRequestId);
+                createLineCommentsOnCommit(gitLabApi, project, sha, score, env, log);
+            }
         }
 
         createCommentOnMergeRequest(gitLabApi, project, mergeRequestEnvironment, comment, log);
+    }
+
+    private MergeRequest getMergeRequest(final GitLabApi gitLabApi, final Project project, final long mergeRequestId)
+            throws GitLabApiException {
+        var api = gitLabApi.getMergeRequestApi();
+        try {
+            return api.getMergeRequest(project.getId(), mergeRequestId);
+        }
+        catch (GitLabApiException exception) {
+            return api.getMergeRequest(project.getId(), mergeRequestId); // try again
+        }
     }
 
     private void commentCommit(final AggregatedScore score, final GitLabApi gitLabApi, final Project project,
