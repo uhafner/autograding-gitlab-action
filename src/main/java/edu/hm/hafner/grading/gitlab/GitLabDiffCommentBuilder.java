@@ -42,9 +42,11 @@ class GitLabDiffCommentBuilder extends GitLabCommentBuilder {
                 .withBaseSha(lastVersion.getBaseCommitSha())
                 .withHeadSha(sha)
                 .withStartSha(lastVersion.getStartCommitSha())
-                .withNewLine(lineStart)
                 .withNewPath(relativePath)
                 .withPositionType(Position.PositionType.TEXT);
+        if (lineStart > 0) {
+            position.withNewLine(lineStart);
+        }
         var markdownMessage = createMarkdownMessage(commentType, relativePath, lineStart, lineEnd, columnStart,
                 columnEnd, title, message, markDownDetails, this::getEnv);
         try {
@@ -67,4 +69,5 @@ class GitLabDiffCommentBuilder extends GitLabCommentBuilder {
             }
         }
     }
+
 }
