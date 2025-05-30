@@ -59,8 +59,8 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         }
 
         try (GitLabApi gitLabApi = new GitLabApi(gitlabUrl, oAuthToken)) {
-            gitLabApi.setRequestTimeout(5000, 10000);
-            gitLabApi.enableRequestResponseLogging(Level.FINE, 4096);
+            gitLabApi.setRequestTimeout(5000, 10_000);
+            gitLabApi.enableRequestResponseLogging(Level.FINE, 4_096);
 
             String projectId = env.getString("CI_PROJECT_ID");
             if (projectId.isBlank() || !StringUtils.isNumeric(projectId)) {

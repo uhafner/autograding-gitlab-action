@@ -69,5 +69,4 @@ class GitLabDiffCommentBuilder extends GitLabCommentBuilder {
             }
         }
     }
-
 }
