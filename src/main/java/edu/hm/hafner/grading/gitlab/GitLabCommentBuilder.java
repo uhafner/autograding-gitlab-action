@@ -1,7 +1,5 @@
 package edu.hm.hafner.grading.gitlab;
 
-import java.util.function.Function;
-
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.gitlab4j.api.CommitsApi;
@@ -9,6 +7,8 @@ import org.gitlab4j.api.CommitsApi;
 import edu.hm.hafner.grading.CommentBuilder;
 import edu.hm.hafner.util.FilteredLog;
 import edu.hm.hafner.util.VisibleForTesting;
+
+import java.util.function.Function;
 
 /**
  * Base class for comment builders that publish comments to GitLab.
@@ -121,5 +121,9 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
 
     final String getEnv(final String name) {
         return StringUtils.defaultString(System.getenv(name));
+    }
+
+    protected int adjustLine(final int line) {
+        return Math.max(line, 1);
     }
 }
