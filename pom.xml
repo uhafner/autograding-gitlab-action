@@ -37,7 +37,7 @@
     <docker-image-baseline>v3-SNAPSHOT</docker-image-baseline>
 
     <autograding-model.version>6.3.0</autograding-model.version>
-    <gitlab4j-api.version>5.8.0</gitlab4j-api.version>
+    <gitlab4j-api.version>6.0.0</gitlab4j-api.version>
     <testcontainers.version>1.21.1</testcontainers.version>
 
     <jib-maven-plugin.version>3.4.5</jib-maven-plugin.version>
