@@ -37,7 +37,7 @@ public class ResultCrawler {
     private static final String GITLAB_HOST_URL = "https://gitlab.lrz.de";
 
     // ------- Default values that can be changed as needed -------
-    private static final String DEFAULT_GROUP_PATH = "dev/courses/java2/"; // the top-level group, for example, dev/courses/java2/
+    private static final String DEFAULT_GROUP_PATH = "dev/courses/java2"; // the top-level group, for example, dev/courses/java2/
     private static final String DEFAULT_ASSIGNMENT = "assignment4"; // the assignment name, for example, assignment7
     private static final String DEFAULT_MR_LABEL = "solution"; // the label to filter merge requests, for example, solution
 
@@ -75,7 +75,15 @@ public class ResultCrawler {
         var assignment = args.length == 1 ? args[0] : DEFAULT_ASSIGNMENT;
         var label = args.length == 2 ? args[1] : DEFAULT_MR_LABEL;
 
-        crawler.createResultsFor(DEFAULT_GROUP_PATH + assignment, label);
+        System.out.println("----------------------------------------------------");
+        System.out.println("Crawling GitLab autograding merge request results");
+        System.out.println("Base URL: " + GITLAB_HOST_URL);
+        System.out.println("Group Path: " + DEFAULT_GROUP_PATH);
+        System.out.println("Assignment Group Name: " + assignment);
+        System.out.println("Merge Request Label: " + label);
+        System.out.println("----------------------------------------------------");
+
+        crawler.createResultsFor(DEFAULT_GROUP_PATH + "/" + assignment, label);
     }
 
     private void createResultsFor(final String repositoryPath, final String label)

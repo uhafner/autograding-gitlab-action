@@ -313,3 +313,17 @@ Then this action basically works like a stand-alone version of my Jenkins [Warni
 
 ![Quality Monitor Overview](images/quality-monitor-overview.png)
 ![Quality Monitor Details](images/quality-monitor-details.png)
+
+
+# Crawling merge request results
+
+There is also a crawler available that can be used to collect the results of multiple projects and aggregate them in a CVS file. 
+The crawler is implemented in the [ResultCrawler](https://github.com/uhafner/autograding-gitlab-action/blob/main/src/main/java/edu/hm/hafner/grading/gitlab/ResultCrawler.java) class and can be used as follows:
+
+```bash
+mvn compile exec:java  -Dexec.args="assignment-group mr-label"
+```
+
+The `assignment-group` is the name of the assignment group (e.g., "assignment1") and the `mr-label` is the label of the merge requests (e.g., "solution"). 
+The crawler will then collect all merge requests with the given label and write the results to a CSV file in the current directory.
+
