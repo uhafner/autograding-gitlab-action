@@ -138,6 +138,9 @@
           </execution>
         </executions>
         <configuration>
+          <container>
+            <mainClass>edu.hm.hafner.grading.gitlab.GitLabAutoGradingRunner</mainClass>
+          </container>
           <to>
             <image>docker.io/uhafner/autograding-gitlab-action</image>
             <tags>

@@ -16,16 +16,17 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Crawls a GitLab group for projects and merge requests, retrieves autograding comments, and generates a CSV report.
@@ -34,12 +35,16 @@ import java.util.regex.Pattern;
  */
 public class ResultCrawler {
     private static final String GITLAB_HOST_URL = "https://gitlab.lrz.de";
-    private static final String GROUP_PATH = "dev/courses/java2/"; // the top-level group, for example, dev/courses/java2/
-    private static final String DEFAULT_ASSIGNMENT = "assignment6";
-    private static final String DEFAULT_LABEL = "grading-functionality";
 
-    private static final Set<String> SKIP_PROJECTS_FROM
-            = Set.of("hafner", "stefan.drexler", "terenyuk", "sebastian.maier3");
+    // ------- Default values that can be changed as needed -------
+    private static final String DEFAULT_GROUP_PATH = "dev/courses/java2/"; // the top-level group, for example, dev/courses/java2/
+    private static final String DEFAULT_ASSIGNMENT = "assignment4"; // the assignment name, for example, assignment7
+    private static final String DEFAULT_MR_LABEL = "solution"; // the label to filter merge requests, for example, solution
+
+    private static final Set<String> SKIP_PROJECTS_FROM = Set.of("hafner"); // students to skip, for example, "hafner"
+    // ------- No need to change anything below this line -------
+
+    private static final Pattern GITLAB_TOKEN_PATTERN = Pattern.compile("glpat-[A-Za-z0-9_\\-]+");
 
     private static final Pattern CATEGORIES_AND_SCORES
             = Pattern.compile("##.*?([\\p{L}\\s:]+)- (\\d+) of (\\d+)");
@@ -62,39 +67,29 @@ public class ResultCrawler {
         var crawler = new ResultCrawler();
 
         var assignment = args.length == 1 ? args[0] : DEFAULT_ASSIGNMENT;
-        var label = args.length == 2 ? args[1] : DEFAULT_LABEL;
+        var label = args.length == 2 ? args[1] : DEFAULT_MR_LABEL;
 
-        crawler.createResultsFor(GROUP_PATH + assignment, label);
+        crawler.createResultsFor(DEFAULT_GROUP_PATH + assignment, label);
     }
 
-    @SuppressWarnings("all")
-    private void createResultsFor(final String repositoryPath, final String label) throws GitLabApiException, IOException {
-        List<String> categories = new ArrayList<>();
-        List<String[]> rows = new ArrayList<>();
-
-        int totalProjects = 0;
-        int totalMergeRequests = 0;
-        int successfulPipelines = 0;
-        int failedOrMissingPipelines = 0;
-        int usedAutogradingNotes = 0;
-        int noAutogradingNotes = 0;
+    private void createResultsFor(final String repositoryPath, final String label)
+            throws GitLabApiException, IOException {
+        Map<String, Map<String, String>> rows = new LinkedHashMap<>();
 
         var token = readGitLabTokenFromGlabsConfiguration();
-
         try (GitLabApi gitLabApi = new GitLabApi(GITLAB_HOST_URL, token)) {
             var projects = readProjects(repositoryPath, gitLabApi);
 
             int projectIndex = 0;
             for (Project project : projects) {
                 projectIndex++;
-                totalProjects++;
 
                 var studentName = StringUtils.substringBetween(project.getName(), "-", "_at");
                 if (SKIP_PROJECTS_FROM.contains(studentName)) {
                     continue;
                 }
 
-                print("→ [%d/%d] Project: %s%n", projectIndex, projects.size(), studentName);
+                print("→ [%d/%d] Student: %s%n", projectIndex, projects.size(), studentName);
 
                 List<MergeRequest> mergeRequests = gitLabApi.getMergeRequestApi().getMergeRequests(project.getId());
 
@@ -223,23 +218,34 @@ public class ResultCrawler {
         return projects;
     }
 
-    private void writeCsvFile(final List<String> categories, final List<String[]> rows) throws IOException {
+    private void writeCsvFile(final Map<String, Map<String, String>> rows) throws IOException {
         try (Writer writer = Files.newBufferedWriter(Path.of("autograding-results.csv"))) {
-            writer.append("Repo,MergeRequest");
-            for (String category : categories) {
-                writer.append(",").append(category);
-            }
-            writer.append(",Status\n");
-            for (String[] row : rows) {
-                writer.append(String.join(",", row)).append("\n");
-            }
+            var maxEntry = rows.entrySet().stream()
+                    .max(Comparator.comparingInt(e -> e.getValue().size()))
+                    .orElseThrow(() -> new IllegalStateException("No entries found in rows to determine categories"));
+
+            var columns = maxEntry.getValue().keySet().stream().filter(key -> !URL.equals(key))
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            columns.add(URL); // Ensure URL is always the last column
+
+            writer.append(String.join(", ", columns));
+            writer.append("\n");
+            writer.append(rows.values().stream()
+                    .map(results -> writeRow(columns, results))
+                    .collect(Collectors.joining("\n")));
         }
+    }
+
+    private String writeRow(final Set<String> keys, final Map<String, String> results) {
+        return keys.stream()
+                .map(key -> results.getOrDefault(key, EMPTY))
+                .collect(Collectors.joining(", "));
     }
 
     private String readGitLabTokenFromGlabsConfiguration() throws IOException {
         String home = System.getProperty("user.home");
         String content = Files.readString(Path.of(home, ".glabs.yml"));
-        Matcher tokenMatcher = GITLAB_TOKEN.matcher(content);
+        Matcher tokenMatcher = GITLAB_TOKEN_PATTERN.matcher(content);
         if (!tokenMatcher.find()) {
             throw new IllegalStateException("No GitLab token found in $HOME/.glabs.yml");
         }
@@ -247,7 +253,7 @@ public class ResultCrawler {
     }
 
     @FormatMethod
-    @SuppressWarnings("PMD.SystemPrintln")
+    @SuppressWarnings({"PMD.SystemPrintln", "SystemOut"})
     private void print(final String format, final Object... args) {
         System.out.printf(format, args);
     }
