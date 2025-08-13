@@ -1,12 +1,12 @@
 package edu.hm.hafner.grading.gitlab;
 
 import org.gitlab4j.api.CommitsApi;
-import org.gitlab4j.api.Constants.LineType;
 import org.gitlab4j.api.DiscussionsApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.MergeRequest;
 import org.gitlab4j.api.models.MergeRequestVersion;
 import org.gitlab4j.api.models.Position;
+import org.gitlab4j.models.Constants.LineType;
 
 import edu.hm.hafner.util.FilteredLog;
 

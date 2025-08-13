@@ -11,12 +11,12 @@ jobs:
 
     steps:
       - name: 'Checkout merge commit'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: "${{ github.event.pull_request.merge_commit_sha }}"
         if: github.event.pull_request.merge_commit_sha != ''
       - name: 'Checkout PR head commit'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: "${{ github.event.pull_request.head.sha }}"
         if: github.event.pull_request.merge_commit_sha == ''
@@ -45,7 +45,7 @@ jobs:
         uses: jwalton/gh-find-current-pr@v1
         id: pr
       - name: Run Quality Monitor
-        uses: uhafner/quality-monitor@v2
+        uses: uhafner/quality-monitor@v3
         with:
           pr-number: ${{ steps.pr.outputs.number }}
           show-headers: true
@@ -99,6 +99,7 @@ jobs:
                   "tools": [
                     {
                       "id": "owasp-dependency-check",
+                      "icon": "shield",
                       "pattern": "**/target/dependency-check-report.json"                    
                     }
                   ]

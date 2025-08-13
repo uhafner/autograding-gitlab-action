@@ -41,7 +41,7 @@ rectangle "coverage-model\n\n0.37.0" as edu_hm_hafner_coverage_model_jar
 rectangle "jackson-databind\n\n2.16.1" as com_fasterxml_jackson_core_jackson_databind_jar
 rectangle "jackson-annotations\n\n2.16.1" as com_fasterxml_jackson_core_jackson_annotations_jar
 rectangle "jackson-core\n\n2.16.1" as com_fasterxml_jackson_core_jackson_core_jar
-rectangle "autograding-gitlab-action\n\n3.4.0" as edu_hm_hafner_autograding_gitlab_action_jar
+rectangle "autograding-gitlab-action\n\n3.6.0-SNAPSHOT" as edu_hm_hafner_autograding_gitlab_action_jar
 rectangle "gitlab4j-api\n\n5.5.0" as org_gitlab4j_gitlab4j_api_jar
 rectangle "jakarta.activation-api\n\n1.2.2" as jakarta_activation_jakarta_activation_api_jar
 rectangle "jersey-common\n\n2.39.1" as org_glassfish_jersey_core_jersey_common_jar
