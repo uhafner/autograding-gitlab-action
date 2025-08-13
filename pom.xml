@@ -32,6 +32,7 @@
   </scm>
 
   <properties>
+    <java.version>21</java.version>
     <module.name>${project.groupId}.autograding.gitlab.action</module.name>
     <docker-image-tag>${project.version}</docker-image-tag>
     <docker-image-baseline>v3-SNAPSHOT</docker-image-baseline>
@@ -115,6 +116,14 @@
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
           <argLine>@{argLine} --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.5.1</version>
+        <configuration>
+          <mainClass>edu.hm.hafner.grading.gitlab.ResultCrawler</mainClass>
         </configuration>
       </plugin>
       <plugin>
