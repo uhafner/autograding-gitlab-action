@@ -47,16 +47,22 @@ public class ResultCrawler {
     private static final Pattern GITLAB_TOKEN_PATTERN = Pattern.compile("glpat-[A-Za-z0-9_\\-]+");
 
     private static final Pattern CATEGORIES_AND_SCORES
-            = Pattern.compile("##.*?([\\p{L}\\s:]+)- (\\d+) of (\\d+)");
-    private static final Pattern GITLAB_TOKEN
-            = Pattern.compile("glpat-[A-Za-z0-9_\\-]+");
+            = Pattern.compile("##.*?(?<category>[\\p{L}\\s:]+)- (?<value>\\d+) of (?<total>\\d+)");
+
+    private static final String EMPTY = "-"; // Placeholder for empty values in the CSV output
+
+    // Column names for the CSV output
+    private static final String URL = "URL";
+    private static final String PIPELINE = "Pipeline";
+    private static final String MR_NUMBER = "MR #";
+    private static final String MR_NAME = "MR Name";
 
     /**
      * Starts the crawler. Usage: {@code ResultCrawler [assignment-name [merge-request-label]]}.
      *
      * @param args
-     *         the command line arguments, where the first argument is the assignment name (optional).
-     *         The second argument is the merge request label to filter by (optional).
+     *         the command line arguments, where the first argument is the assignment name (optional). The second
+     *         argument is the merge request label to filter by (optional).
      *
      * @throws GitLabApiException
      *         if there is an error accessing the GitLab API
@@ -91,122 +97,90 @@ public class ResultCrawler {
 
                 print("→ [%d/%d] Student: %s%n", projectIndex, projects.size(), studentName);
 
-                List<MergeRequest> mergeRequests = gitLabApi.getMergeRequestApi().getMergeRequests(project.getId());
+                Map<String, String> scores = new LinkedHashMap<>();
+                rows.put(studentName, scores);
 
-                int mrIndex = 0;
-                for (MergeRequest mr : mergeRequests) {
-                    mrIndex++;
-                    totalMergeRequests++;
+                scores.put("Student", studentName);
 
-                    if (isValidLabel(label) && !mr.getLabels().contains(label)) {
-                        print("   - MR [%d/%d]: %s - Skipping MR since labels %s do not contain '%s'%n",
-                                mrIndex, mergeRequests.size(), mr.getTitle(),
-                                mr.getLabels(), label);
-                        continue;
-                    }
-
-                    print("   + MR [%d/%d]: %s%n", mrIndex, mergeRequests.size(), mr.getTitle());
-
-                    // Check if a successful pipeline exists for the MR SHA
-                    Optional<Pipeline> pipelineOpt = gitLabApi.getPipelineApi()
-                            .getPipelines(project.getId(), new PipelineFilter().withSha(mr.getSha()))
-                            .stream().findFirst();
-
-                    if (pipelineOpt.isEmpty() || pipelineOpt.get().getStatus() != PipelineStatus.SUCCESS) {
-                        // No pipeline or failed pipeline
-                        failedOrMissingPipelines++;
-                        String[] row = new String[3 + categories.size()];
-                        row[0] = studentName;
-                        row[1] = mr.getTitle();
-                        Arrays.fill(row, 2, row.length - 1, "-");
-                        row[row.length - 1] = "Failed or missing pipeline";
-                        rows.add(row);
-                        continue;
-                    }
-                    else {
-                        successfulPipelines++;
-                    }
-
-                    // Retrieve all comments (notes) on the merge request
-                    List<Note> notes = gitLabApi.getNotesApi().getMergeRequestNotes(project.getId(), mr.getIid());
-
-                    boolean found = false;
-                    for (Note note : notes) {
-                        // Only consider comments created by the autograding bot
-                        if (!note.getAuthor().getName().equals("AUTOGRADING_BOT")) {
-                            continue;
-                        }
-                        String body = note.getBody();
-                        if (!body.startsWith("<!-- -[autograding-gitlab-action]- -->")) {
-                            continue;
-                        }
-                        if (!body.contains("Autograding score")) {
-                            continue;
-                        }
-
-                        usedAutogradingNotes++;
-                        found = true;
-
-                        Map<String, String> scores = new LinkedHashMap<>();
-                        scores.put("Repo", studentName);
-                        scores.put("MergeRequest", mr.getTitle());
-
-                        // Extract categories and scores with pattern matching
-                        // categories, because it then also works with different autograding configurations
-                        Matcher blockMatcher = CATEGORIES_AND_SCORES.matcher(body);
-                        while (blockMatcher.find()) {
-                            String category = blockMatcher.group(1).trim().replaceAll("\\s+", " ");
-                            String score = blockMatcher.group(2);
-                            String total = blockMatcher.group(3);
-                            String percent = String.format("%.0f%%",
-                                    (Double.parseDouble(score) / Double.parseDouble(total)) * 100);
-                            scores.put(category, percent);
-                            if (!categories.contains(category)) {
-                                categories.add(category);
-                            }
-                        }
-
-                        String[] row = new String[3 + categories.size()];
-                        row[0] = scores.get("Repo");
-                        row[1] = scores.get("MergeRequest");
-                        for (int i = 0; i < categories.size(); i++) {
-                            row[i + 2] = scores.getOrDefault(categories.get(i), "-");
-                        }
-                        row[row.length - 1] = "OK"; // Success
-                        rows.add(row);
-                        break; // Only evaluate one autograding comment per MR
-                    }
-
-                    if (!found) {
-                        // Pipeline succeeded but no autograding comment found
-                        noAutogradingNotes++;
-                        String[] row = new String[3 + categories.size()];
-                        row[0] = studentName;
-                        row[1] = mr.getTitle();
-                        Arrays.fill(row, 2, row.length - 1, "-");
-                        row[row.length - 1] = "No autograding comments";
-                        rows.add(row);
-                    }
+                Optional<MergeRequest> mergeRequests = gitLabApi.getMergeRequestApi().getMergeRequests(project.getId())
+                        .stream().filter(m -> m.getLabels().contains(label)).findFirst();
+                if (mergeRequests.isEmpty()) {
+                    scores.put(URL, project.getWebUrl() + "/-/merge_requests");
+                    skip("no merge request contains label " + label, scores);
+                    continue;
                 }
+
+                var mr = mergeRequests.get();
+
+                scores.put(MR_NUMBER, String.valueOf(mr.getIid()));
+                scores.put(MR_NAME, mr.getTitle());
+                scores.put(URL, mr.getWebUrl());
+
+                Optional<Pipeline> possiblePipeline = gitLabApi.getPipelineApi()
+                        .getPipelines(project.getId(), new PipelineFilter().withSha(mr.getSha()))
+                        .stream().findFirst();
+
+                if (possiblePipeline.isEmpty()) {
+                    skip("no pipeline found", scores);
+                    scores.put(PIPELINE, "No pipeline found");
+                    continue;
+                }
+
+                if (possiblePipeline.get().getStatus() != PipelineStatus.SUCCESS) {
+                    skip("no successful pipeline found", scores);
+                    scores.put(PIPELINE, "No successful pipeline found");
+                    continue;
+                }
+
+                Optional<Note> notes = gitLabApi.getNotesApi().getMergeRequestNotes(project.getId(), mr.getIid())
+                        .stream()
+                        .filter(note -> note.getAuthor().getName().equals("AUTOGRADING_BOT"))
+                        .filter(note -> note.getBody().startsWith("<!-- -[autograding-gitlab-action]- -->"))
+                        .filter(note -> note.getBody().contains("Autograding score"))
+                        .findFirst();
+
+                if (notes.isEmpty()) {
+                    skip("no Autograding comments found", scores);
+                    scores.put(PIPELINE, "No autograding comments found");
+                    continue;
+                }
+                scores.put(URL, mr.getWebUrl() + "#note_" + notes.get().getId());
+
+                scores.put(PIPELINE, "Success");
+
+                var gradingNote = notes.get();
+                scores.putAll(readGradingComments(gradingNote));
             }
         }
 
-        // Write the results to a CSV file
-        writeCsvFile(categories, rows);
-
-        System.out.println();
-        System.out.println("Done. Results written to autograding-results.csv.");
-        System.out.println("--------- Summary ---------");
-        System.out.println("Total projects:                   " + totalProjects);
-        System.out.println("Total merge requests:            " + totalMergeRequests);
-        System.out.println("Successful pipelines:            " + successfulPipelines);
-        System.out.println("Failed or missing pipelines:     " + failedOrMissingPipelines);
-        System.out.println("Used autograding comments:       " + usedAutogradingNotes);
-        System.out.println("No autograding comments in MR:   " + noAutogradingNotes);
+        writeCsvFile(rows);
     }
 
-    private boolean isValidLabel(final String label) {
-        return StringUtils.isNotBlank(label) && !label.equals("-");
+    private void skip(final String reason, final Map<String, String> scores) {
+        print("   ! Skipping project: %s - %s%n", reason, scores.getOrDefault(URL, EMPTY));
+    }
+
+    /**
+     * Extract the available categories and scores with pattern matching so it will work with different autograding
+     * configurations.
+     *
+     * @param gradingNote
+     *         the note containing the grading comments
+     *
+     * @return a map of category names to scores as percentages
+     */
+    private Map<String, String> readGradingComments(final Note gradingNote) {
+        var scores = new LinkedHashMap<String, String>();
+        Matcher blockMatcher = CATEGORIES_AND_SCORES.matcher(gradingNote.getBody());
+        while (blockMatcher.find()) {
+            String category = blockMatcher.group("category").trim().replaceAll("\\s+", " ");
+            String score = blockMatcher.group("value");
+            String total = blockMatcher.group("total");
+            String percent = String.format(Locale.ENGLISH, "%.0f%%",
+                    Double.parseDouble(score) / Double.parseDouble(total) * 100);
+            scores.put(category, percent);
+        }
+        return scores;
     }
 
     private List<Project> readProjects(final String repositoryPath, final GitLabApi gitLabApi)
