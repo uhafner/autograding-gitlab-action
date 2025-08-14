@@ -13,7 +13,7 @@
 
   <groupId>edu.hm.hafner</groupId>
   <artifactId>autograding-gitlab-action</artifactId>
-  <version>3.6.0-SNAPSHOT</version>
+  <version>4.0.0-SNAPSHOT-5</version>
   <packaging>jar</packaging>
 
   <name>Autograding GitLab Action</name>
@@ -34,9 +34,9 @@
   <properties>
     <module.name>${project.groupId}.autograding.gitlab.action</module.name>
     <docker-image-tag>${project.version}</docker-image-tag>
-    <docker-image-baseline>v3-SNAPSHOT</docker-image-baseline>
+    <docker-image-baseline>v4-SNAPSHOT</docker-image-baseline>
 
-    <autograding-model.version>6.5.0</autograding-model.version>
+    <autograding-model.version>8.0.0-SNAPSHOT</autograding-model.version>
     <gitlab4j-api.version>6.1.0</gitlab4j-api.version>
     <testcontainers.version>1.21.3</testcontainers.version>
 
