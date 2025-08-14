@@ -14,6 +14,8 @@ import org.gitlab4j.api.models.Project;
 import edu.hm.hafner.grading.AggregatedScore;
 import edu.hm.hafner.grading.AutoGradingRunner;
 import edu.hm.hafner.grading.GradingReport;
+import edu.hm.hafner.grading.QualityGateResult;
+import edu.hm.hafner.grading.QualityGateResult.OverallStatus;
 import edu.hm.hafner.util.FilteredLog;
 
 import java.util.Collection;
@@ -43,7 +45,8 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
     }
 
     @Override
-    protected void publishGradingResult(final AggregatedScore score, final FilteredLog log) {
+    protected void publishGradingResult(final AggregatedScore score, final QualityGateResult qualityGateResult,
+            final FilteredLog log) {
         var env = new Environment(log);
         var gitlabUrl = env.getString("CI_SERVER_URL");
         if (StringUtils.isBlank(gitlabUrl)) {
@@ -78,19 +81,31 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
 
             var project = gitLabApi.getProjectApi().getProject(Long.parseLong(projectId));
 
-            grade(score, gitLabApi, project, sha, env, log);
+            grade(score, qualityGateResult, gitLabApi, project, sha, env, log);
         }
         catch (GitLabApiException exception) {
-            log.logException(exception, "Error while accessing GitLab API");
+            throw new IllegalStateException("Error while accessing GitLab API", exception);
         }
     }
 
-    private void grade(final AggregatedScore score, final GitLabApi gitLabApi, final Project project, final String sha,
+    @Override
+    protected void handleQualityGateResult(final QualityGateResult qualityGateResult, final FilteredLog log) {
+        if (log.hasErrors()) {
+            throw new IllegalStateException("Autograding finished with errors, failing the action");
+        }
+        if (qualityGateResult.getOverallStatus() != OverallStatus.SUCCESS) {
+            throw new IllegalStateException("Quality gate failed, failing the action");
+        }
+    }
+
+    private void grade(final AggregatedScore score, final QualityGateResult qualityGateResult, final GitLabApi gitLabApi, final Project project, final String sha,
             final Environment env, final FilteredLog log) throws GitLabApiException {
+        var errors = createErrorMessageMarkdown(log);
+        var qualityGateDetails = qualityGateResult.createMarkdownSummary();
         var report = new GradingReport();
         var comment = env.getBoolean("SKIP_DETAILS")
-                ? report.getMarkdownSummary(score, getTitleName())
-                : report.getMarkdownDetails(score, getTitleName());
+                ? report.getMarkdownSummary(score, getTitleName()) + errors + qualityGateDetails
+                : report.getMarkdownDetails(score, getTitleName()) + errors + qualityGateDetails;
         comment = AUTOGRADING_MARKER + "\n\n" + comment + "\n\nCreated by " + getAutogradingVersionLink(log);
         String mergeRequestEnvironment = env.getString("CI_MERGE_REQUEST_IID");
         if (mergeRequestEnvironment.isBlank() || !StringUtils.isNumeric(mergeRequestEnvironment)) {

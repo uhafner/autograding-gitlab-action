@@ -110,6 +110,29 @@ public class GitLabAutoGradingRunnerDockerITest {
             """;
     private static final String WS = "/github/workspace/target/";
 
+    private static final String QUALITY_GATES_OK = """
+            {
+              "qualityGates": [
+                {
+                  "metric": "line",
+                  "threshold": 10.0,
+                  "criticality": "FAILURE"
+                }
+              ]
+            }
+            """;
+    private static final String QUALITY_GATES_NOK = """
+            {
+              "qualityGates": [
+                {
+                  "metric": "line",
+                  "threshold": 100.0,
+                  "criticality": "FAILURE"
+                }
+              ]
+            }
+            """;
+
     @Test
     void shouldGradeInDockerContainer() throws TimeoutException {
         try (var container = createContainer()) {
@@ -118,8 +141,7 @@ public class GitLabAutoGradingRunnerDockerITest {
 
             assertThat(readStandardOut(container))
                     .contains("Obtaining configuration from environment variable CONFIG")
-                    .contains(new String[] {
-                            "Processing 1 test configuration(s)",
+                    .contains("Processing 1 test configuration(s)",
                             "-> Unittests Total: TESTS: 1",
                             "JUnit Score: 10 of 100",
                             "Processing 2 coverage configuration(s)",
@@ -134,7 +156,50 @@ public class GitLabAutoGradingRunnerDockerITest {
                             "=> Style Score: 6 of 100",
                             "-> SpotBugs (spotbugs): 1 bug (low: 1)",
                             "=> Bugs Score: 86 of 100",
-                            "Autograding score - 138 of 500"});
+                            "Autograding score - 138 of 500");
+        }
+    }
+
+    @Test
+    void shouldGradeWithSuccessfulQualityGates() throws TimeoutException {
+        try (var container = createContainer()) {
+            container.withEnv("CONFIG", CONFIGURATION).withEnv("QUALITY_GATES", QUALITY_GATES_OK);
+            startContainerWithAllFiles(container);
+
+            assertThat(readStandardOut(container))
+                    .contains("Obtaining configuration from environment variable CONFIG")
+                    .contains("Processing 1 test configuration(s)",
+                            "Processing 2 coverage configuration(s)",
+                            "Processing 2 static analysis configuration(s)",
+                            "Autograding score - 138 of 500")
+                    .contains("Quality Gates GitLab Autograding",
+                            "Found quality gates configuration in environment variable 'QUALITY_GATES'",
+                            "Parsed 1 quality gate(s) from JSON configuration",
+                            "Quality gates evaluation completed: ✅ SUCCESS",
+                            "Passed: 1, Failed: 0",
+                            "✅ Line Coverage: 11.00 >= 10.00");
+        }
+    }
+
+    @Test
+    void shouldGradeWithFailedQualityGates() throws TimeoutException {
+        try (var container = createContainer()) {
+            container.withEnv("CONFIG", CONFIGURATION).withEnv("QUALITY_GATES", QUALITY_GATES_NOK);
+            startContainerWithAllFiles(container);
+
+            assertThat(readStandardOut(container))
+                    .contains("Obtaining configuration from environment variable CONFIG")
+                    .contains("Processing 1 test configuration(s)",
+                            "Processing 2 coverage configuration(s)",
+                            "Processing 2 static analysis configuration(s)",
+                            "Autograding score - 138 of 500")
+                    .contains("Quality Gates GitLab Autograding",
+                            "Found quality gates configuration in environment variable 'QUALITY_GATES'",
+                            "Parsed 1 quality gate(s) from JSON configuration",
+                            "Quality gates evaluation completed: ❌ FAILURE",
+                            "Passed: 0, Failed: 1",
+                            "❌ Line Coverage: 11.00 >= 100.00",
+                            "java.lang.IllegalStateException: Autograding finished with errors, failing the action");
         }
     }
 
@@ -145,8 +210,7 @@ public class GitLabAutoGradingRunnerDockerITest {
 
             assertThat(readStandardOut(container))
                     .contains("No configuration provided (environment variable CONFIG not set), using default configuration")
-                    .contains(new String[] {
-                            "Processing 1 test configuration(s)",
+                    .contains("Processing 1 test configuration(s)",
                             "-> JUnit Tests Total: TESTS: 1",
                             "Tests Score: 100 of 100",
                             "Processing 2 coverage configuration(s)",
@@ -162,7 +226,10 @@ public class GitLabAutoGradingRunnerDockerITest {
                             "=> Style Score: 98 of 100",
                             "-> SpotBugs (spotbugs): 1 bug (low: 1)",
                             "=> Bugs Score: 97 of 100",
-                            "Autograding score - 351 of 500 (70%)"});
+                            "Autograding score - 351 of 500 (70%)")
+                    .contains("Environment variable 'QUALITY_GATES' not found or empty",
+                            "No quality gates to evaluate",
+                            "Autograding finished with errors, failing the action");
         }
     }
 
@@ -171,8 +238,7 @@ public class GitLabAutoGradingRunnerDockerITest {
         try (var container = createContainer()) {
             container.withWorkingDirectory("/github/workspace").start();
             assertThat(readStandardOut(container))
-                    .contains(new String[] {
-                            "Processing 1 test configuration(s)",
+                    .contains("Processing 1 test configuration(s)",
                             "=> Tests Score: 100 of 100",
                             "Configuration error for 'JUnit Tests'?",
                             "Processing 2 coverage configuration(s)",
@@ -190,21 +256,23 @@ public class GitLabAutoGradingRunnerDockerITest {
                             "=> Style Score: 100 of 100",
                             "-> SpotBugs (spotbugs): No warnings",
                             "=> Bugs Score: 100 of 100",
-                            "Autograding score - 500 of 500 (100%)"});
+                            "Autograding score - 500 of 500 (100%)");
         }
     }
 
     private GenericContainer<?> createContainer() {
-        return new GenericContainer<>(DockerImageName.parse("uhafner/autograding-gitlab-action:3.6.0-SNAPSHOT"));
+        return new GenericContainer<>(DockerImageName.parse("uhafner/autograding-gitlab-action:4.0.0-SNAPSHOT-5"));
     }
 
-    private String readStandardOut(final GenericContainer<? extends GenericContainer<?>> container) throws TimeoutException {
+    private String readStandardOut(final GenericContainer<? extends GenericContainer<?>> container)
+            throws TimeoutException {
         var waitingConsumer = new WaitingConsumer();
         var toStringConsumer = new ToStringConsumer();
 
         var composedConsumer = toStringConsumer.andThen(waitingConsumer);
         container.followOutput(composedConsumer);
-        waitingConsumer.waitUntil(frame -> frame.getUtf8String().contains("End GitLab Autograding"), 60, TimeUnit.SECONDS);
+        waitingConsumer.waitUntil(frame -> frame.getUtf8String().contains("End GitLab Autograding"), 60,
+                TimeUnit.SECONDS);
 
         return toStringConsumer.toUtf8String();
     }
