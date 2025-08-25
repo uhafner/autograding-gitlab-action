@@ -12,7 +12,8 @@ Please note that the project is hosted on our university's private GitLab instan
 - [Merge Request with some failures and warnings](https://gitlab.lrz.de/dev/gitlab-autograding-example/-/merge_requests/2)
 - [Merge Request with a score of 100 %](https://gitlab.lrz.de/dev/gitlab-autograding-example/-/merge_requests/1)
 
-![Pull request comment](images/pr-comment.png)
+![Pull request comment - part 1](images/pr-comment1.png)
+![Pull request comment - part 2](images/pr-comment2.png)
 
 You will find a [GitLab pipeline example](.gitlab-ci.yml) in the top-level folder, which shows how to use this action in your own project.
 The example is based on a Java project that uses Maven as a build tool. 
