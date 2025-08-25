@@ -261,7 +261,7 @@ public class GitLabAutoGradingRunnerDockerITest {
     }
 
     private GenericContainer<?> createContainer() {
-        return new GenericContainer<>(DockerImageName.parse("uhafner/autograding-gitlab-action:4.0.0-SNAPSHOT-5"));
+        return new GenericContainer<>(DockerImageName.parse("uhafner/autograding-gitlab-action:4.1.0-SNAPSHOT-SNAPSHOT-5"));
     }
 
     private String readStandardOut(final GenericContainer<? extends GenericContainer<?>> container)
