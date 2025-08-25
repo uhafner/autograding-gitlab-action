@@ -69,6 +69,7 @@ public class ResultCrawler {
      * @throws IOException
      *         if there is an error reading the GitLab token from the configuration file
      */
+    @SuppressWarnings({"PMD.SystemPrintln", "SystemOut"})
     public static void main(final String... args) throws GitLabApiException, IOException {
         var crawler = new ResultCrawler();
 
