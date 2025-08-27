@@ -3,45 +3,65 @@
 [![GitHub Actions](https://github.com/uhafner/autograding-gitlab-action/workflows/CD/badge.svg)](https://github.com/uhafner/autograding-gitlab-action/actions/workflows/cd.yml)
 [![CodeQL](https://github.com/uhafner/autograding-gitlab-action/workflows/CodeQL/badge.svg)](https://github.com/uhafner/autograding-gitlab-action/actions/workflows/codeql.yml)
 
-This action autogrades projects based on a configurable set of metrics and gives feedback on merge requests (or single commits) in GitLab. 
-I use this action to automatically grade student projects in my lectures at the Munich University of Applied Sciences.
+Automated scoring (autograding) and optional quality monitoring for GitLab merge requests and branch pipelines. 
+The action aggregates test results, code and mutation coverage, static analysis findings, and software metrics, then posts a structured merge request note (plus inline line comments for warnings, missed or mutated lines when enabled). 
+It can run in two modes: scoring mode (compute a numeric score from configurable impacts and maxScore values) or monitoring mode (omit maxScore to get a qualitative dashboard without a grade).
+I use the scoring mode of this action to automatically grade student projects in my lectures at the Munich University of Applied Sciences.
 
-You can see the results of this action in two merge requests of a fake student project. 
-Please note that the project is hosted on our university's private GitLab instance, so without a proper login, you will not be able to see the details of the merge requests. 
+It is inspired by the Jenkins [Warnings](https://plugins.jenkins.io/warnings-ng/) and [Coverage](https://plugins.jenkins.io/coverage) plugins and complemented by the GitHub variant (see: [Quality Monitor](https://github.com/uhafner/quality-monitor) and [Autograding GitHub Action](https://github.com/uhafner/autograding-github-action)). 
+It works with any tech stack that can produce supported report files (JUnit or other xUnit style test reports, JaCoCo Cobertura OpenCover PIT coverage or mutation reports, and over one hundred static analysis formats via the shared analysis model). 
+The action itself does not execute builds or analysis tools; you run those in earlier pipeline stages and pass their generated XML (or other) report artifacts to this container step.
 
+Core advantages: consistent feedback for students or contributors, transparent scoring rules (JSON-based), fast re-runs (lightweight publication stage), and broad parser support without custom scripting. 
+Use it to guide improvement (negative impacts for problems) or to reward achievements (positive impacts for passed tests or coverage percentages) or both.
+
+Sample Outputs:
 - [Merge Request with some failures and warnings](https://gitlab.lrz.de/dev/gitlab-autograding-example/-/merge_requests/2)
 - [Merge Request with a score of 100 %](https://gitlab.lrz.de/dev/gitlab-autograding-example/-/merge_requests/1)
+ 
+(Note: the project is hosted on our university's private GitLab instance, so without a proper login, you will not be able to see the details of the merge requests.)
+
+## Example MR Comment 
+
+The action posts a structured merge request note summarizing all enabled metrics. 
+Inline notes (line comments) for failed tests, static analysis warnings, and missed or survived coverage items are added when not disabled.
 
 ![Pull request comment - part 1](images/pr-comment1.png)
 ![Pull request comment - part 2](images/pr-comment2.png)
 
-You will find a [GitLab pipeline example](.gitlab-ci.yml) in the top-level folder, which shows how to use this action in your own project.
-The example is based on a Java project that uses Maven as a build tool. 
-The action is not limited to Java projects, but can be used for any programming language that can generate the required report files (JUnit XML, JaCoCo XML, etc.).
+## Key Features
 
-Please have a look at my [companion coding style](https://github.com/uhafner/codingstyle) and [Maven parent POM](https://github.com/uhafner/codingstyle-pom) to see how to create Java projects that can be graded using this GitLab action. 
-If you are hosting your project on GitHub, then you might be interested in my [similar GitHub action](https://github.com/uhafner/autograding-github-action) as well.
+- Unified quality summary in MR comment
+- Inline annotations for warnings and missed coverage (optional limits)
+- Quality gates (fail or mark unstable based on thresholds)
+- Supports grouped metrics (tests, analysis, coverage, mutation, metrics)
+- Configurable impacts and maximum score per metric
 
-Both actions are inspired by my Jenkins plugins: 
-- [Jenkins Warnings plugin](https://github.com/jenkinsci/warnings-ng-plugin)
-- [Jenkins Coverage plugin](https://github.com/jenkinsci/coverage-plugin)
-- [Jenkins Autograding plugin](https://github.com/jenkinsci/autograding-plugin)
+## Supported Reports
 
-The Jenkins plugins work in the same way but are much more powerful and flexible and show the results additionally in Jenkins' UI. 
+- Tests: JUnit, xUnit, NUnit
+- Coverage & Mutation: JaCoCo, Cobertura, OpenCover, Open Clover, VectorCAST, Go Coverage, PIT
+- Static Analysis: 100\+ formats (see [supported list](https://github.com/jenkinsci/analysis-model/blob/main/SUPPORTED-FORMATS.md))
+- Software Metrics: PMD metrics file (cyclomatic, cognitive, NPath, LOC, NCSS, cohesion, weight)
 
-Please note that the action works on report files that are generated by other tools. 
-It does not run the tests or static analysis tools itself. You need to run these tools in a previous step of your pipeline. 
-See the example below for details. 
-This has the advantage that you can use a tooling you are already familiar with. 
-So the action will run for any programming language that can generate the required report files. 
-There are already more than [one hundred analysis formats](https://github.com/jenkinsci/analysis-model/blob/main/SUPPORTED-FORMATS.md) supported. 
-Code and mutation coverage reports can use the JaCoCo, Cobertura, OpenCover and PIT formats, see the [coverage model](https://github.com/jenkinsci/coverage-model) for details. 
-Test results can be provided in the JUnit, XUnit, or NUnit XML-formats.
+## Prerequisites
 
-# Configuration
+The action does **not** run tests or analysis tools. Generate all reports in previous workflow steps, then invoke the action to collect and publish results.
 
-The autograding action must be added as a separate step of your GitLab pipeline since it is packaged in a Docker container. 
-This step should run after your normal build and testing steps so that it has access to all produced artifacts. 
+## High-Level Workflow
+
+1. Your build steps create supported XML or JSON reports.
+2. The action parses the configured reports (or uses the default config).
+3. It generates:
+    - GitLab commit summary
+    - Optional MR comment (when the pipeline is for a MR)
+    - Optional source code annotations
+
+## Usage
+
+You can use this action in any GitLab pipeline.
+It must be added as a separate step since it is packaged in a Docker container. 
+This step must run after your normal build and testing steps so that it has access to all produced artifacts. 
 Make sure to configure your build to produce the required report files (e.g., JUnit XML reports, JaCoCo XML reports, etc.) even when there are test failures or warnings found. 
 Otherwise, the action will only show partial results.
 
@@ -83,33 +103,32 @@ test:
   script:
     - java -cp @/app/jib-classpath-file edu.hm.hafner.grading.gitlab.GitLabAutoGradingRunner
 ```
+You will find a complete [GitLab pipeline example](.gitlab-ci.yml) in the top-level folder, which can be used as a template for your own projects.
+The example is also based on a Java project that uses Maven as a build tool.
+The action is not limited to Java projects but can be used for any programming language that can generate the required report files (JUnit XML, JaCoCo XML, etc.).
+
 
 ## Action Parameters
 
-This action can be configured using the following environment variables (see example above):
-- ``GITLAB_TOKEN``: mandatory GitLab access token, see next section for details.
-- ``CONFIG: "{...}"``: optional configuration, see next sections for details, or consult the [autograding-model](https://github.com/uhafner/autograding-model) project for the exact implementation. If not specified, a [default configuration](https://github.com/uhafner/autograding-model/blob/main/src/main/resources/default-config.json) will be used.
-- ``DISPLAY_NAME: "Name in the comment title"``: optional name in the comment title (overwrites the default: "Autograding score").
-- ``SKIP_LINE_COMMENTS: true``: Optional flag to skip the creation of commit comments at specific lines (for warnings and missed coverage). 
-By default, line comments are created. 
-Alternatively, you can limit the number of comments by setting the following parameters.
-- ``MAX_WARNING_COMMENTS: <number>``: Optional parameter to limit the number of warning comments at specific lines. 
-By default, all line comments are created.
-- ``MAX_COVERAGE_COMMENTS: <number>``: Optional parameter to limit the number of coverage comments at specific lines. 
-By default, all line comments are created.
-- ``SKIP_DETAILS: true``: Optional flag to skip the details of the results (e.g., stack trace of failed tests, autograding detail tables) in the commit or merge request comment.
-By default, the detailed report is created.
-- ``SKIP_WARNING_DESCRIPTION: true``: Optional flag to skip the adding of warning descriptions for static analysis warnings. 
-By default, the descriptions are added. 
+This action can be configured using the following environment variables (see example above). 
+Parameters are optional unless marked as required. 
+Omitted parameters fall back to sensible defaults.
+- ``CONFIG`` (string, JSON): Custom report mapping JSON (tests, coverage, analysis, metrics). If omitted, the built-in [default mapping](https://raw.githubusercontent.com/uhafner/autograding-model/main/src/main/resources/default-no-score-config.json) is used. Provide either inline (multi-line YAML scalar) or load from a file and pass via output. See [the autograding-model](https://github.com/uhafner/autograding-model?tab=readme-ov-file#metric-report-configuration) project for details.
+- ``QUALITY_GATES`` (string, JSON): Quality gate definitions: `{ "qualityGates": [ { "metric": "<id>", "threshold": <number>, "criticality": "FAILURE|UNSTABLE" } ] }`, see [autograding-model](https://github.com/uhafner/autograding-model?tab=readme-ov-file#quality-gates) project. If omitted, no gates are enforced (the build result stays successful).
+- ``DISPLAY_NAME`` (string, default: `Autograding score`): Custom name for the comment title.
+- ``SKIP_LINE_COMMENTS`` (boolean, default: `false`): If `true`, suppress creation of per-line coverage and warning annotations.
+- ``MAX_WARNING_COMMENTS`` (number, optional): Upper limit of warning annotations. Omit for unlimited.
+- ``MAX_COVERAGE_COMMENTS`` (number, optional): Upper limit of missed coverage annotations. Omit for unlimited.
+- ``SKIP_DETAILS`` (boolean, default: `false`): Optional flag to skip the details of the results (e.g., stack trace of failed tests, autograding detail tables) in the commit or merge request comment.
+- ``SKIP_WARNING_DESCRIPTION: true`` (boolean, default: `false`): Optional flag to skip the adding of warning descriptions for static analysis warnings. 
 Since static analysis tools like CheckStyle or SpotBugs have lengthy descriptions, it makes sense to skip the descriptions if you have many warnings.
-- ``SKIP_COMMIT_COMMENTS: true``: Optional flag to skip the creation of comments in commits. 
+- ``SKIP_COMMIT_COMMENTS`` (boolean, default: `false`): Optional flag to skip the creation of comments in commits. 
 When this option is enabled, then comments are only added to merge requests. 
-By default, comments are created for commits and merge requests. 
 When all your changes are integrated in merge requests, then you can skip the commit comments to reduce the noise in the merge request: in this case, the comments in the merge request will be replaced with the results of the latest commit only.
 
 ## GitLab Access Token
 
-The action needs a GitLab access token to create comments in the commit notes or merge request. 
+The action needs a GitLab access token as a masked CI / CD variable to create comments in the commit notes or merge request. 
 You can create a new token with a meaningful name in your GitLab user or group settings. 
 This token name will be used as author for all notes. 
 The token needs the permissions `api, read_api, read_repository, write_repository` 
@@ -120,192 +139,6 @@ This token then needs to be added as a CI/CD Variable in your GitLab project set
 The name of the variable must be `GITLAB_TOKEN` and the value is the token you just created.
 
 ![CI/CD Variables](images/ci-variable.png)
-
-## Metrics Configuration
-
-The individual metrics can be configured by defining an appropriate `CONFIG` environment variable (in JSON format) in your GitLab pipeline:
-
-Currently, you can select from the metrics shown in the following sections. 
-Each metric can be enabled and configured individually. 
-All of these configurations are composed in the same way: you can define a list of tools that are used to collect the data, a name and icon (Markdown identifier) for the metric, and a maximum score. 
-All tools need to provide a pattern where the autograding action can find the result files in the workspace (e.g., JUnit XML reports). 
-Additionally, each tool needs to provide the parser ID of the tool so that the underlying model can find the correct parser to read the results. 
-See [analysis model](https://github.com/jenkinsci/analysis-model) and [coverage model](https://github.com/jenkinsci/coverage-model) for the list of supported parsers.
-
-Additionally, you can define the impact of each result (e.g., a failed test, a missed line in coverage) on the final score. 
-The impact is a positive or negative number and will be multiplied with the actual value of the measured items during the evaluation. 
-Negative values will be subtracted from the maximum score to compute the final score. 
-Positive values will be directly used as the final score. 
-You can choose the type of impact that matches your needs best.
-
-## Test statistics (e.g., number of failed tests)
-
-![Test statistics](images/tests.png)
-
-This metric can be configured using a JSON object `tests`, see the example below for details: 
-
-```json
-{
-  "tests": {
-    "tools": [
-      {
-        "id": "junit",
-        "name": "Unittests",
-        "pattern": "**/junit*.xml"
-      }
-    ],
-    "name": "JUnit",
-    "passedImpact": 10,
-    "skippedImpact": -1,
-    "failureImpact": -5,
-    "maxScore": 100
-  }
-}
-``` 
-
-You can either count passed tests as positive impact or failed tests as negative impact (or use a mix of both). 
-Alternatively, you can use the success or failure rate of the tests to compute the impact. 
-This alternative approach is shown in the next example:
-
-```json
-{
-  "tests": {
-    "tools": [
-      {
-        "id": "junit",
-        "name": "Unittests",
-        "pattern": "**/junit*.xml"
-      }
-    ],
-    "name": "JUnit",
-    "successRateImpact": 1,
-    "failureRateImpact": 0,
-    "maxScore": 100
-  }
-}
-``` 
-
-Skipped tests will be listed in the details view individually. 
-For failed tests, the test error message and stack trace will be shown directly after the summary in the merge request.
-
-## Code or mutation coverage (e.g., line coverage percentage)
-
-![Code coverage summary](images/coverage.png)
-
-This metric can be configured using a JSON object `coverage`, see the example below for details:
-
-```json
-{
-  "coverage": [
-    {
-      "tools": [
-        {
-          "id": "jacoco",
-          "name": "Line Coverage",
-          "metric": "line",
-          "sourcePath": "src/main/java",
-          "pattern": "**/jacoco.xml"
-        },
-        {
-          "id": "jacoco",
-          "name": "Branch Coverage",
-          "metric": "branch",
-          "sourcePath": "src/main/java",
-          "pattern": "**/jacoco.xml"
-        }
-      ],
-      "name": "JaCoCo",
-      "maxScore": 100,
-      "coveredPercentageImpact": 1,
-      "missedPercentageImpact": -1
-    },
-    {
-      "tools": [
-        {
-          "id": "pit",
-          "name": "Mutation Coverage",
-          "metric": "mutation",
-          "sourcePath": "src/main/java",
-          "pattern": "**/mutations.xml"
-        }
-      ],
-      "name": "PIT",
-      "maxScore": 100,
-      "coveredPercentageImpact": 1,
-      "missedPercentageImpact": 0
-    }
-  ]
-}
-```
-
-You can either use the covered percentage as positive impact or the missed percentage as negative impact (a mix of both makes little sense but would work as well). 
-Please make sure to define exactly a unique and supported metric for each tool. 
-For example, JaCoCo provides `line` and `branch` coverage, so you need to define two tools for JaCoCo. 
-PIT provides mutation coverage, so you need to define a tool for PIT that uses the metric `mutation`. 
-
-Missed lines or branches as well as survived mutations will be shown as comments in the merge request:
-
-![Line coverage comment](images/line-coverage-comment.png)
-![Branch and mutation coverage comment](images/mutation-coverage-comment.png)
-
-## Static analysis (e.g., number of warnings)
-
-![Static analysis](images/analysis.png)
-
-This metric can be configured using a JSON object `analysis`, see the example below for details:
-
-```json
-{
-  "analysis": [
-    {
-      "name": "Style",
-      "id": "style",
-      "tools": [
-        {
-          "id": "checkstyle",
-          "name": "CheckStyle",
-          "pattern": "**/target/checkstyle-result.xml"
-        },
-        {
-          "id": "pmd",
-          "name": "PMD",
-          "pattern": "**/target/pmd.xml"
-        }
-      ],
-      "errorImpact": 1,
-      "highImpact": 2,
-      "normalImpact": 3,
-      "lowImpact": 4,
-      "maxScore": 100
-    },
-    {
-      "name": "Bugs",
-      "id": "bugs",
-      "icon": "bug",
-      "tools": [
-        {
-          "id": "spotbugs",
-          "name": "SpotBugs",
-          "sourcePath": "src/main/java",
-          "pattern": "**/target/spotbugsXml.xml"
-        }
-      ],
-      "errorImpact": -11,
-      "highImpact": -12,
-      "normalImpact": -13,
-      "lowImpact": -14,
-      "maxScore": 100
-    }
-  ]
-}
-```
-
-Normally, you would only use a negative impact for this metric: each warning (of given severity) will reduce the final score by the specified amount. 
-You can define the impact of each severity level individually. 
-
-All warnings will be shown as comments in the merge request:
-
-![Warning annotations](images/analysis-comment.png )
 
 ## Monitoring Project Quality
 
