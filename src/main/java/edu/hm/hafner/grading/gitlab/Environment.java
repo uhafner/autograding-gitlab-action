@@ -1,6 +1,7 @@
 package edu.hm.hafner.grading.gitlab;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 
 import edu.hm.hafner.util.FilteredLog;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
@@ -49,7 +50,7 @@ class Environment {
 
     boolean getBoolean(final String name) {
         var value = StringUtils.defaultString(read(name));
-        var defined = StringUtils.isNotBlank(value) && !StringUtils.equalsIgnoreCase(value, "false");
+        var defined = StringUtils.isNotBlank(value) && !Strings.CI.equals(value, "false");
         log.logInfo(">>>> %s: %b", name, defined);
         return defined;
     }
