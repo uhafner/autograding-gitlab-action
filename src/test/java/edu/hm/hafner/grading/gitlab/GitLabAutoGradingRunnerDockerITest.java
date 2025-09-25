@@ -279,7 +279,7 @@ public class GitLabAutoGradingRunnerDockerITest {
 
     private void startContainerWithAllFiles(final GenericContainer<?> container) {
         container.withWorkingDirectory("/github/workspace")
-                .withCopyFileToContainer(read("checkstyle/checkstyle-result.xml"), WS + "checkstyle-result.xml")
+                .withCopyFileToContainer(read("checkstyle/checkstyle.xml"), WS + "checkstyle-result.xml")
                 .withCopyFileToContainer(read("jacoco/jacoco.xml"), WS + "site/jacoco/jacoco.xml")
                 .withCopyFileToContainer(read("junit/TEST-edu.hm.hafner.grading.AutoGradingActionTest.xml"), WS + "surefire-reports/TEST-Aufgabe3Test.xml")
                 .withCopyFileToContainer(read("pit/mutations.xml"), WS + "pit-reports/mutations.xml")
