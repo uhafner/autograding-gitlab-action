@@ -199,7 +199,7 @@ public class GitLabAutoGradingRunnerDockerITest {
                             "Quality gates evaluation completed: ❌ FAILURE",
                             "Passed: 0, Failed: 1",
                             "❌ Line Coverage: 11.00 >= 100.00",
-                            "java.lang.IllegalStateException: Autograding finished with errors, failing the action");
+                            "Quality gates failed, failing the action");
         }
     }
 
@@ -229,7 +229,7 @@ public class GitLabAutoGradingRunnerDockerITest {
                             "Autograding score - 351 of 500 (70%)")
                     .contains("Environment variable 'QUALITY_GATES' not found or empty",
                             "No quality gates to evaluate",
-                            "Autograding finished with errors, failing the action");
+                            "Autograding finished with some errors in the log, failing the action");
         }
     }
 

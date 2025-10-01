@@ -15,7 +15,6 @@ import edu.hm.hafner.grading.AggregatedScore;
 import edu.hm.hafner.grading.AutoGradingRunner;
 import edu.hm.hafner.grading.GradingReport;
 import edu.hm.hafner.grading.QualityGateResult;
-import edu.hm.hafner.grading.QualityGateResult.OverallStatus;
 import edu.hm.hafner.util.FilteredLog;
 
 import java.util.Collection;
@@ -89,13 +88,8 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
     }
 
     @Override
-    protected void handleQualityGateResult(final QualityGateResult qualityGateResult, final FilteredLog log) {
-        if (log.hasErrors()) {
-            throw new IllegalStateException("Autograding finished with errors, failing the action");
-        }
-        if (qualityGateResult.getOverallStatus() != OverallStatus.SUCCESS) {
-            throw new IllegalStateException("Quality gate failed, failing the action");
-        }
+    protected boolean failOnQualityGate() {
+        return true;
     }
 
     private void grade(final AggregatedScore score, final QualityGateResult qualityGateResult, final GitLabApi gitLabApi, final Project project, final String sha,
