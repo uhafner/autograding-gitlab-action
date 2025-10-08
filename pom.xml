@@ -13,7 +13,7 @@
 
   <groupId>edu.hm.hafner</groupId>
   <artifactId>autograding-gitlab-action</artifactId>
-  <version>4.1.0</version>
+  <version>4.2.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Autograding GitLab Action</name>
@@ -155,7 +155,7 @@
             <tags>
               <tag>${docker-image-tag}</tag>
               <tag>v${docker-image-tag}</tag>
-              <tag>${docker-image-baseline}</tag>
+<!--              <tag>${docker-image-baseline}</tag>-->
             </tags>
             <auth>
               <username>${env.DOCKER_IO_USERNAME}</username>
