@@ -37,7 +37,7 @@
     <docker-image-tag>${project.version}</docker-image-tag>
     <docker-image-baseline>v4</docker-image-baseline>
 
-    <autograding-model.version>8.5.0</autograding-model.version>
+    <autograding-model.version>8.6.0</autograding-model.version>
     <gitlab4j-api.version>6.1.0</gitlab4j-api.version>
     <testcontainers.version>1.21.3</testcontainers.version>
 
