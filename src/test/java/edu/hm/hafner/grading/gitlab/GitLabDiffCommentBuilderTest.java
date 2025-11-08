@@ -175,7 +175,7 @@ class GitLabDiffCommentBuilderTest {
         }
 
         @Override
-        public Node readNode(final ToolConfiguration configuration, final FilteredLog log) {
+        public Node readNode(final ToolConfiguration configuration, final String directory, final FilteredLog log) {
             return new ModuleNode("module");
         }
     }
