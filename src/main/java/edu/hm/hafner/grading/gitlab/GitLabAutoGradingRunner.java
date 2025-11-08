@@ -17,8 +17,15 @@ import edu.hm.hafner.grading.GradingReport;
 import edu.hm.hafner.grading.QualityGateResult;
 import edu.hm.hafner.util.FilteredLog;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.logging.Level;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * GitLab action entrypoint for the autograding action.
@@ -255,5 +262,73 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         var defined = StringUtils.isNotBlank(System.getenv(name));
         log.logInfo(">>>> %s: %b", name, defined);
         return !defined;
+    }
+
+    @Override
+    public void downloadArtefacts(final FilteredLog log) {
+        var env = new Environment(log);
+        var gitlabUrl = env.getString("CI_SERVER_URL");
+        if (StringUtils.isBlank(gitlabUrl)) {
+            log.logError("No CI_SERVER_URL defined - skipping");
+
+            return;
+        }
+        String oAuthToken = env.getString("GITLAB_TOKEN");
+        if (oAuthToken.isBlank()) {
+            log.logError("No valid GITLAB_TOKEN found - skipping");
+
+            return;
+        }
+
+        try (GitLabApi gitLabApi = new GitLabApi(gitlabUrl, oAuthToken)) {
+            gitLabApi.setRequestTimeout(5000, 10_000);
+            gitLabApi.enableRequestResponseLogging(Level.FINE, 4_096);
+
+            String projectId = env.getString("CI_PROJECT_ID");
+            if (projectId.isBlank() || !StringUtils.isNumeric(projectId)) {
+                log.logError("No valid CI_PROJECT_ID found - skipping");
+
+                return;
+            }
+
+            var project = gitLabApi.getProjectApi().getProject(Long.parseLong(projectId));
+            var mergeRequestEnvironment = env.getString("CI_MERGE_REQUEST_IID");
+            var mergeRequestId = Long.parseLong(mergeRequestEnvironment);
+            // Get Merge Request
+            var mergeRequest = getMergeRequest(gitLabApi, project, mergeRequestId);
+            // Get Pipeline
+            var pipeline = mergeRequest.getPipeline();
+            log.logInfo(">>>> Pipeline: " + pipeline);
+
+            // Get Job
+            var jobs = gitLabApi.getJobApi().getJobsStream(project.getId(), 2743165L);
+            var job = jobs.filter(j -> j.getName().equals("maven")).findFirst().orElse(null);
+            if (job == null) {
+                log.logInfo(">>> DELTA >>> No build job found");
+                return;
+            }
+
+            try (InputStream inputStream = gitLabApi.getJobApi().downloadArtifactsFile(project.getId(), job.getId())) {
+                Path tempDir = Files.createTempDirectory("artifacts");
+                try (ZipInputStream zis = new ZipInputStream(inputStream)) {
+                    ZipEntry entry;
+                    while ((entry = zis.getNextEntry()) != null) {
+                        Path outPath = tempDir.resolve(entry.getName());
+                        if (entry.isDirectory()) {
+                            Files.createDirectories(outPath);
+                        } else {
+                            Files.createDirectories(outPath.getParent());
+                            Files.copy(zis, outPath, StandardCopyOption.REPLACE_EXISTING);
+                        }
+                        zis.closeEntry();
+                    }
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        catch (GitLabApiException exception) {
+            log.logException(exception, "TODO");
+        }
     }
 }
