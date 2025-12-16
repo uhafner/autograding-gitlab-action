@@ -39,7 +39,7 @@
 
     <autograding-model.version>8.6.0</autograding-model.version>
     <gitlab4j-api.version>6.2.0</gitlab4j-api.version>
-    <testcontainers.version>1.21.3</testcontainers.version>
+    <testcontainers.version>1.21.4</testcontainers.version>
 
     <jib-maven-plugin.version>3.5.1</jib-maven-plugin.version>
   </properties>
