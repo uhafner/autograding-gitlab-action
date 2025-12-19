@@ -18,12 +18,15 @@ import edu.hm.hafner.grading.QualityGateResult;
 import edu.hm.hafner.util.FilteredLog;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 
 /**
  * GitLab action entrypoint for the autograding action.
  *
  * @author Ullrich Hafner
+ * @author Jannik Ohme
  */
 public class GitLabAutoGradingRunner extends AutoGradingRunner {
     static final String AUTOGRADING_MARKER = "<!-- -[autograding-gitlab-action]- -->";
@@ -135,7 +138,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
             try {
                 var mergeRequest = getMergeRequest(gitLabApi, project, mergeRequestId);
                 createLineCommentsOnDiff(gitLabApi.getCommitsApi(), gitLabApi.getDiscussionsApi(), mergeRequest,
-                        versions.get(0), score, env, log);
+                        versions.getFirst(), score, env, log);
             }
             catch (GitLabApiException exception) {
                 log.logException(exception, "While commenting on merge request !%d diff, an error occurred. "
@@ -255,5 +258,48 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         var defined = StringUtils.isNotBlank(System.getenv(name));
         log.logInfo(">>>> %s: %b", name, defined);
         return !defined;
+    }
+
+    @Override
+    protected Map<String, Set<Integer>> getModifiedLines(final FilteredLog log) {
+        var env = new Environment(log);
+        var gitlabUrl = env.getString("CI_SERVER_URL");
+        if (StringUtils.isBlank(gitlabUrl)) {
+            log.logError("No CI_SERVER_URL defined - skipping");
+
+            return Map.of();
+        }
+        String oAuthToken = env.getString("GITLAB_TOKEN");
+        if (oAuthToken.isBlank()) {
+            log.logError("No valid GITLAB_TOKEN found - skipping");
+
+            return Map.of();
+        }
+
+        try (GitLabApi gitLabApi = new GitLabApi(gitlabUrl, oAuthToken)) {
+            gitLabApi.setRequestTimeout(5000, 10_000);
+            gitLabApi.enableRequestResponseLogging(Level.FINE, 4_096);
+
+            String projectId = env.getString("CI_PROJECT_ID");
+            if (projectId.isBlank() || !StringUtils.isNumeric(projectId)) {
+                log.logError("No valid CI_PROJECT_ID found - skipping");
+                return Map.of();
+            }
+
+            var mergeRequestEnvironment = env.getString("CI_MERGE_REQUEST_IID");
+            var mergeRequestId = Long.parseLong(mergeRequestEnvironment);
+            var diffs = gitLabApi.getMergeRequestApi().getDiffs(projectId, mergeRequestId);
+
+            var changes = DiffParser.getModifiedLines(diffs);
+            for (var entry : changes.entrySet()) {
+                log.logInfo("Changed lines in %s: %s", entry.getKey(), entry.getValue());
+            }
+            return changes;
+        }
+        catch (GitLabApiException e) {
+            log.logError("Error while accessing GitLab API");
+        }
+
+        return Map.of();
     }
 }
