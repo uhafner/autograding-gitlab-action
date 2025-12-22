@@ -121,7 +121,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>3.6.2</version>
+        <version>3.6.3</version>
         <configuration>
           <mainClass>edu.hm.hafner.grading.gitlab.ResultCrawler</mainClass>
         </configuration>
