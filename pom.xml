@@ -37,6 +37,8 @@
     <docker-image-tag>${project.version}</docker-image-tag>
     <docker-image-baseline>v4</docker-image-baseline>
 
+    <java.version>25</java.version>
+
     <autograding-model.version>8.6.0</autograding-model.version>
     <gitlab4j-api.version>6.2.0</gitlab4j-api.version>
     <testcontainers.version>1.21.4</testcontainers.version>
@@ -155,7 +157,6 @@
             <tags>
               <tag>${docker-image-tag}</tag>
               <tag>v${docker-image-tag}</tag>
-<!--              <tag>${docker-image-baseline}</tag>-->
             </tags>
             <auth>
               <username>${env.DOCKER_IO_USERNAME}</username>
@@ -163,7 +164,7 @@
             </auth>
           </to>
           <from>
-            <image>maven:3.9.11-eclipse-temurin-21-alpine</image>
+            <image>maven:3.9.12-eclipse-temurin-25-alpine@sha256:c36ce99a7301bbd39e3a1aa5883b0e31b19b6101a7c4c44625dc4e6dbfbbc22b</image>
             <platforms>
               <platform>
                 <architecture>amd64</architecture>
