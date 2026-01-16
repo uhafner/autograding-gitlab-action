@@ -12,6 +12,12 @@
         "icon": "rocket",
         "name": "Integration Tests",
         "pattern": "**/target/failsafe-reports/TEST*.xml"
+      },
+      {
+        "id": "junit",
+        "icon": "no_entry",
+        "name": "Architecture Tests",
+        "pattern": "**/target/archunit-reports/TEST*.xml"
       }
     ]
   },
@@ -27,6 +33,11 @@
         {
           "id": "pmd",
           "pattern": "**/target/pmd-*/pmd.xml"
+        },
+        {
+          "id": "java",
+          "icon": "coffee",
+          "pattern": "**/maven.log"
         }
       ]
     },
@@ -52,8 +63,8 @@
       "icon": "shield",
       "tools": [
         {
-          "icon": "shield",
           "id": "owasp-dependency-check",
+          "icon": "shield",
           "pattern": "**/target/dependency-check-report.json"
         }
       ]
