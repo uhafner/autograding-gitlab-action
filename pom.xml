@@ -155,7 +155,6 @@
             <tags>
               <tag>${docker-image-tag}</tag>
               <tag>v${docker-image-tag}</tag>
-<!--              <tag>${docker-image-baseline}</tag>-->
             </tags>
             <auth>
               <username>${env.DOCKER_IO_USERNAME}</username>
