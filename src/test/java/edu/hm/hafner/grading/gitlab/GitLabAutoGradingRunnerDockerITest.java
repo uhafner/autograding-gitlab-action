@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.*;
  *
  * @author Ullrich Hafner
  */
-public class GitLabAutoGradingRunnerDockerITest {
+class GitLabAutoGradingRunnerDockerITest {
     private static final String CONFIGURATION = """
             {
               "tests": {
