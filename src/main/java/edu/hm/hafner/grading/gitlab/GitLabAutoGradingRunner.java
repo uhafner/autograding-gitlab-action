@@ -29,12 +29,9 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
     static final String AUTOGRADING_MARKER = "<!-- -[autograding-gitlab-action]- -->";
 
     /**
-     * Public entry point, calls the action.
-     *
-     * @param unused
-     *         not used
+     * The public entry point for the action in the docker container simply calls the autograding runner.
      */
-    public static void main(final String... unused) {
+    void main() {
         new GitLabAutoGradingRunner().run();
     }
 
