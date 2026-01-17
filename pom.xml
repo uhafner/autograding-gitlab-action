@@ -32,7 +32,6 @@
   </scm>
 
   <properties>
-    <java.version>21</java.version>
     <module.name>${project.groupId}.autograding.gitlab.action</module.name>
     <docker-image-tag>${project.version}</docker-image-tag>
     <docker-image-baseline>v4</docker-image-baseline>
@@ -47,6 +46,7 @@
   </properties>
 
   <dependencies>
+
     <dependency>
       <groupId>edu.hm.hafner</groupId>
       <artifactId>autograding-model</artifactId>
@@ -179,6 +179,19 @@
         </configuration>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.openrewrite.maven</groupId>
+          <artifactId>rewrite-maven-plugin</artifactId>
+          <configuration>
+            <activeRecipes combine.children="append">
+              <recipe>org.openrewrite.java.migrate.UpgradeToJava25</recipe>
+            </activeRecipes>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
 </project>
