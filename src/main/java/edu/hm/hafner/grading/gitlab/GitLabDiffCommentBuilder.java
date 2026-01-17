@@ -61,7 +61,7 @@ class GitLabDiffCommentBuilder extends GitLabCommentBuilder {
                     getCommitsApi().addComment(mergeRequest.getProjectId(), sha, markdownMessage, relativePath,
                             lineStart, LineType.NEW);
                 }
-                catch (GitLabApiException ignored) {
+                catch (GitLabApiException _) {
                     getLog().logException(exception, "Can't create commit comment for %s", relativePath);
                 }
             }
