@@ -18,7 +18,12 @@ public class DiffParser {
                     var parts = line.split(" ");
                     var newRange = parts[2];
                     var rangeParts = newRange.substring(1).split(",");
-                    lineNum = Integer.parseInt(rangeParts[0]);
+                    try {
+                        lineNum = Integer.parseInt(rangeParts[0]);
+                    }
+                    catch (NumberFormatException e) {
+                        return Map.of();
+                    }
                 }
                 else if (line.startsWith("+") && !line.startsWith("+++")) {
                     changedLines.add(lineNum);

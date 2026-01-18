@@ -266,7 +266,14 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         var gitlabUrl = env.getString("CI_SERVER_URL");
         var oAuthToken = env.getString("GITLAB_TOKEN");
         var projectId = env.getString("CI_PROJECT_ID");
-        var mergeRequestId = Long.parseLong(env.getString("CI_MERGE_REQUEST_IID"));
+        long mergeRequestId;
+        try {
+            mergeRequestId = Long.parseLong(env.getString("CI_MERGE_REQUEST_IID"));
+        }
+        catch (NumberFormatException e) {
+            log.logException(e, "No valid merge request ID found");
+            return Map.of();
+        }
 
         if (gitlabUrl.isBlank() || oAuthToken.isBlank() || projectId.isBlank()
                 || !StringUtils.isNumeric(projectId)) {
@@ -281,7 +288,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
             return DiffParser.getModifiedLines(diffs);
         }
         catch (GitLabApiException e) {
-            log.logError("Error while accessing GitLab API");
+            log.logException(e, "Error while accessing GitLab API");
         }
 
         return Map.of();
