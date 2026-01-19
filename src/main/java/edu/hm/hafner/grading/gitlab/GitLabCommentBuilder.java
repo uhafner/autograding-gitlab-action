@@ -78,7 +78,7 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
         }
         var link = "[%s](%s)".formatted(linkName, linkUrl);
 
-        return String.format("%s%n%n#### :%s: &nbsp; %s%n%n%s: %s",
+        return "%s%n%n#### :%s: &nbsp; %s%n%n%s: %s".formatted(
                 GitLabAutoGradingRunner.AUTOGRADING_MARKER, getIcon(commentType), title, link, message)
                 + (details.isBlank() ? StringUtils.EMPTY : "\n\n" + details);
     }

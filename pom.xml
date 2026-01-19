@@ -46,6 +46,7 @@
   </properties>
 
   <dependencies>
+
     <dependency>
       <groupId>edu.hm.hafner</groupId>
       <artifactId>autograding-model</artifactId>
@@ -149,7 +150,6 @@
             <tags>
               <tag>${docker-image-tag}</tag>
               <tag>v${docker-image-tag}</tag>
-<!--              <tag>${docker-image-baseline}</tag>-->
             </tags>
             <auth>
               <username>${env.DOCKER_IO_USERNAME}</username>
@@ -157,7 +157,7 @@
             </auth>
           </to>
           <from>
-            <image>maven:3.9.12-eclipse-temurin-25-alpine</image>
+            <image>maven:3.9.12-eclipse-temurin-25-alpine@sha256:c36ce99a7301bbd39e3a1aa5883b0e31b19b6101a7c4c44625dc4e6dbfbbc22b</image>
             <platforms>
               <platform>
                 <architecture>amd64</architecture>
@@ -179,6 +179,19 @@
         </configuration>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.openrewrite.maven</groupId>
+          <artifactId>rewrite-maven-plugin</artifactId>
+          <configuration>
+            <activeRecipes combine.children="append">
+              <recipe>org.openrewrite.java.migrate.UpgradeToJava25</recipe>
+            </activeRecipes>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
 </project>

@@ -25,7 +25,7 @@ class Environment {
             log.logInfo(">>>> %s: %s", key, integer);
             return integer;
         }
-        catch (NumberFormatException exception) {
+        catch (NumberFormatException _) {
             if (StringUtils.isBlank(value)) {
                 log.logInfo(">>>> %s: not set", key);
             }
@@ -38,7 +38,7 @@ class Environment {
     }
 
     String getString(final String key) {
-        String value = read(key);
+        var value = read(key);
         if (StringUtils.isBlank(value)) {
             log.logInfo(">>>> %s: not set", key);
         }

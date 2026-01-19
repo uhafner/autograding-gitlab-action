@@ -32,12 +32,9 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
     static final String AUTOGRADING_MARKER = "<!-- -[autograding-gitlab-action]- -->";
 
     /**
-     * Public entry point, calls the action.
-     *
-     * @param unused
-     *         not used
+     * The public entry point for the action in the docker container simply calls the autograding runner.
      */
-    static void main(final String... unused) {
+    void main() {
         new GitLabAutoGradingRunner().run();
     }
 
@@ -56,25 +53,25 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
 
             return;
         }
-        String oAuthToken = env.getString("GITLAB_TOKEN");
+        var oAuthToken = env.getString("GITLAB_TOKEN");
         if (oAuthToken.isBlank()) {
             log.logError("No valid GITLAB_TOKEN found - skipping");
 
             return;
         }
 
-        try (GitLabApi gitLabApi = new GitLabApi(gitlabUrl, oAuthToken)) {
+        try (var gitLabApi = new GitLabApi(gitlabUrl, oAuthToken)) {
             gitLabApi.setRequestTimeout(5000, 10_000);
             gitLabApi.enableRequestResponseLogging(Level.FINE, 4_096);
 
-            String projectId = env.getString("CI_PROJECT_ID");
+            var projectId = env.getString("CI_PROJECT_ID");
             if (projectId.isBlank() || !StringUtils.isNumeric(projectId)) {
                 log.logError("No valid CI_PROJECT_ID found - skipping");
 
                 return;
             }
 
-            String sha = env.getString("CI_COMMIT_SHA");
+            var sha = env.getString("CI_COMMIT_SHA");
             if (sha.isBlank()) {
                 log.logError("No valid CI_COMMIT_SHA found - skipping");
 
@@ -104,7 +101,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
                 ? report.getMarkdownSummary(score, getTitleName()) + errors + qualityGateDetails
                 : report.getMarkdownDetails(score, getTitleName()) + errors + qualityGateDetails;
         comment = AUTOGRADING_MARKER + "\n\n" + comment + "\n\n<hr />\n\nCreated by " + getAutogradingVersionLink(log);
-        String mergeRequestEnvironment = env.getString("CI_MERGE_REQUEST_IID");
+        var mergeRequestEnvironment = env.getString("CI_MERGE_REQUEST_IID");
         if (mergeRequestEnvironment.isBlank() || !StringUtils.isNumeric(mergeRequestEnvironment)) {
             if (showCommentsInCommit(log)) {
                 commentCommit(score, gitLabApi, project, sha, env, log, comment);
@@ -156,7 +153,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         try {
             return api.getMergeRequest(project.getId(), mergeRequestId);
         }
-        catch (GitLabApiException exception) {
+        catch (GitLabApiException _) {
             return api.getMergeRequest(project.getId(), mergeRequestId); // try again
         }
     }
@@ -243,7 +240,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         try {
             gitLabApi.getNotesApi().deleteMergeRequestNote(projectId, mergeRequestIid, note.getId());
         }
-        catch (GitLabApiException exception) {
+        catch (GitLabApiException _) {
             // ignore exceptions
         }
     }

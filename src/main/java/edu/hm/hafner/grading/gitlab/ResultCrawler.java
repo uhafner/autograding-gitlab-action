@@ -24,7 +24,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -70,7 +69,7 @@ public class ResultCrawler {
      *         if there is an error reading the GitLab token from the configuration file
      */
     @SuppressWarnings({"PMD.SystemPrintln", "SystemOut"})
-    public static void main(final String... args) throws GitLabApiException, IOException {
+    static void main(final String... args) throws GitLabApiException, IOException {
         var crawler = new ResultCrawler();
 
         var assignment = args.length == 1 ? args[0] : DEFAULT_ASSIGNMENT;
@@ -92,7 +91,7 @@ public class ResultCrawler {
         Map<String, Map<String, String>> rows = new LinkedHashMap<>();
 
         var token = readGitLabTokenFromGlabsConfiguration();
-        try (GitLabApi gitLabApi = new GitLabApi(GITLAB_HOST_URL, token)) {
+        try (var gitLabApi = new GitLabApi(GITLAB_HOST_URL, token)) {
             var projects = readProjects(repositoryPath, gitLabApi);
 
             int projectIndex = 0;
@@ -143,7 +142,7 @@ public class ResultCrawler {
 
                 Optional<Note> notes = gitLabApi.getNotesApi().getMergeRequestNotes(project.getId(), mr.getIid())
                         .stream()
-                        .filter(note -> note.getAuthor().getName().equals("AUTOGRADING_BOT"))
+                        .filter(note -> "AUTOGRADING_BOT".equals(note.getAuthor().getName()))
                         .filter(note -> note.getBody().startsWith("<!-- -[autograding-gitlab-action]- -->"))
                         .filter(note -> note.getBody().contains("Autograding score"))
                         .findFirst();
@@ -180,11 +179,11 @@ public class ResultCrawler {
      */
     private Map<String, String> readGradingComments(final Note gradingNote) {
         var scores = new LinkedHashMap<String, String>();
-        Matcher blockMatcher = CATEGORIES_AND_SCORES.matcher(gradingNote.getBody());
+        var blockMatcher = CATEGORIES_AND_SCORES.matcher(gradingNote.getBody());
         while (blockMatcher.find()) {
-            String category = blockMatcher.group("category").trim().replaceAll("\\s+", " ");
-            String score = blockMatcher.group("value");
-            String total = blockMatcher.group("total");
+            var category = blockMatcher.group("category").trim().replaceAll("\\s+", " ");
+            var score = blockMatcher.group("value");
+            var total = blockMatcher.group("total");
             String percent = String.format(Locale.ENGLISH, "%.0f%%",
                     Double.parseDouble(score) / Double.parseDouble(total) * 100);
             scores.put(category, percent);
@@ -228,7 +227,7 @@ public class ResultCrawler {
     private String readGitLabTokenFromGlabsConfiguration() throws IOException {
         String home = System.getProperty("user.home");
         String content = Files.readString(Path.of(home, ".glabs.yml"));
-        Matcher tokenMatcher = GITLAB_TOKEN_PATTERN.matcher(content);
+        var tokenMatcher = GITLAB_TOKEN_PATTERN.matcher(content);
         if (!tokenMatcher.find()) {
             throw new IllegalStateException("No GitLab token found in $HOME/.glabs.yml");
         }
