@@ -2,10 +2,26 @@ package edu.hm.hafner.grading.gitlab;
 
 import org.gitlab4j.api.models.Diff;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-public class DiffParser {
-    public static Map<String, Set<Integer>> getModifiedLines(final List<Diff> diffs) {
+/**
+ * Provides changed lines for a GitLab merge request so patch coverage can be computed.
+ */
+// TODO: extract common logic with GitHub DiffParser
+class DiffParser {
+    /**
+     * Parses the given list of diffs and returns a map of changed lines by file.
+     *
+     * @param diffs
+     *         the list of diffs
+     *
+     * @return a map of changed lines by file
+     */
+    Map<String, Set<Integer>> getModifiedLines(final List<Diff> diffs) {
         Map<String, Set<Integer>> changedLinesByFile = new HashMap<>();
 
         for (Diff diff : diffs) {
@@ -13,11 +29,11 @@ public class DiffParser {
 
             var diffText = diff.getDiff();
             int lineNum = 0;
-            for (var line : diffText.split("\n")) {
+            for (var line : diffText.split("\n", 0)) {
                 if (line.startsWith("@@")) {
-                    var parts = line.split(" ");
+                    var parts = line.split(" ", 0);
                     var newRange = parts[2];
-                    var rangeParts = newRange.substring(1).split(",");
+                    var rangeParts = newRange.substring(1).split(",", 0);
                     try {
                         lineNum = Integer.parseInt(rangeParts[0]);
                     }

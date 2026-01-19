@@ -6,14 +6,13 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Assertions.*;
 
 class DiffParserTest {
     @Test
     void shouldReturnEmptyMapForEmptyDiffList() {
         List<Diff> diffs = List.of();
-        var result = DiffParser.getModifiedLines(diffs);
+        var result = new DiffParser().getModifiedLines(diffs);
         assertThat(result).isEmpty();
     }
 
@@ -31,7 +30,7 @@ class DiffParserTest {
                 line3
                 """);
 
-        var result = DiffParser.getModifiedLines(List.of(diff));
+        var result = new DiffParser().getModifiedLines(List.of(diff));
         assertThat(result).containsExactly(entry("FileName.java", Set.of(2)));
     }
 
@@ -48,7 +47,7 @@ class DiffParserTest {
                 +line3
                 """);
 
-        var result = DiffParser.getModifiedLines(List.of(diff));
+        var result = new DiffParser().getModifiedLines(List.of(diff));
         assertThat(result).containsEntry("FileName.java", Set.of(1, 2, 3));
     }
 
@@ -73,7 +72,7 @@ class DiffParserTest {
                 +addedLine
                 """);
 
-        var result = DiffParser.getModifiedLines(List.of(diff1, diff2));
+        var result = new DiffParser().getModifiedLines(List.of(diff1, diff2));
         assertThat(result)
                 .hasSize(2)
                 .containsEntry("FileName1.java", Set.of(2))

@@ -142,7 +142,7 @@ public class GitLabAutoGradingRunnerDockerITest {
             assertThat(readStandardOut(container))
                     .contains("Obtaining configuration from environment variable CONFIG")
                     .contains("Processing 1 test configuration(s)",
-                            "-> Unittests Total: TESTS: 1",
+                            "-> Unittests Total: 1",
                             "JUnit Score: 10 of 100",
                             "Processing 2 coverage configuration(s)",
                             "-> Line Coverage Total: LINE: 10.93% (33/302)",
@@ -177,7 +177,7 @@ public class GitLabAutoGradingRunnerDockerITest {
                             "Parsed 1 quality gate(s) from JSON configuration",
                             "Quality gates evaluation completed: ✅ SUCCESS",
                             "Passed: 1, Failed: 0",
-                            "✅ Line Coverage: 11.00 >= 10.00");
+                            "✅ Line Coverage (Whole Project): **10.93** >= 10.00");
         }
     }
 
@@ -198,7 +198,7 @@ public class GitLabAutoGradingRunnerDockerITest {
                             "Parsed 1 quality gate(s) from JSON configuration",
                             "Quality gates evaluation completed: ❌ FAILURE",
                             "Passed: 0, Failed: 1",
-                            "❌ Line Coverage: 11.00 >= 100.00",
+                            "❌ Line Coverage (Whole Project): **10.93** >= 100.00",
                             "Quality gates failed, failing the action");
         }
     }
@@ -211,7 +211,7 @@ public class GitLabAutoGradingRunnerDockerITest {
             assertThat(readStandardOut(container))
                     .contains("No configuration provided (environment variable CONFIG not set), using default configuration")
                     .contains("Processing 1 test configuration(s)",
-                            "-> JUnit Tests Total: TESTS: 1",
+                            "-> JUnit Tests Total: 1",
                             "Tests Score: 100 of 100",
                             "Processing 2 coverage configuration(s)",
                             "-> Line Coverage Total: LINE: 10.93% (33/302)",
@@ -261,7 +261,7 @@ public class GitLabAutoGradingRunnerDockerITest {
     }
 
     private GenericContainer<?> createContainer() {
-        return new GenericContainer<>(DockerImageName.parse("uhafner/autograding-gitlab-action:4.2.0-SNAPSHOT"));
+        return new GenericContainer<>(DockerImageName.parse("uhafner/autograding-gitlab-action:5.0.0-SNAPSHOT"));
     }
 
     private String readStandardOut(final GenericContainer<? extends GenericContainer<?>> container)
