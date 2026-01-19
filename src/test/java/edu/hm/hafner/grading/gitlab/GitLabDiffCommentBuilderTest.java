@@ -152,7 +152,7 @@ class GitLabDiffCommentBuilderTest {
 
     private static class ReportGenerator implements ToolParser {
         @Override
-        public Report readReport(final ToolConfiguration tool, final FilteredLog log) {
+        public Report readReport(final ToolConfiguration tool, final String directory, final FilteredLog log) {
             return createReport();
         }
 
@@ -175,7 +175,7 @@ class GitLabDiffCommentBuilderTest {
         }
 
         @Override
-        public Node readNode(final ToolConfiguration configuration, final FilteredLog log) {
+        public Node readNode(final ToolConfiguration configuration, final String directory, final FilteredLog log) {
             return new ModuleNode("module");
         }
     }
