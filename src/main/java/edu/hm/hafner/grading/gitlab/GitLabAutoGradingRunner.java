@@ -38,9 +38,12 @@ import java.util.zip.ZipInputStream;
  * @author Ullrich Hafner
  * @author Jannik Ohme
  */
+@SuppressWarnings("PMD.GodClass")
 public class GitLabAutoGradingRunner extends AutoGradingRunner {
-    static final String AUTOGRADING_MARKER = "<!-- -[autograding-gitlab-action]- -->";
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     private static final Optional<Path> NO_DELTA_AVAILABLE = Optional.empty();
+
+    static final String AUTOGRADING_MARKER = "<!-- -[autograding-gitlab-action]- -->";
 
     /**
      * The public entry point for the action in the docker container simply calls the autograding runner.
@@ -349,13 +352,13 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         }
     }
 
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
     private Optional<Path> readReports(final FilteredLog log, final GitLabApi gitLabApi, final String projectId,
             final Job job) {
         try (var inputStream = gitLabApi.getJobApi().downloadArtifactsFile(projectId, job.getId());
                 var zis = new ZipInputStream(inputStream)) {
             var tempDir = Files.createTempDirectory("artifacts");
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
+            for (ZipEntry entry = zis.getNextEntry(); entry != null; entry = zis.getNextEntry()) {
                 var outPath = tempDir.resolve(entry.getName()).normalize();
                 if (!outPath.startsWith(tempDir)) {
                     throw new IOException("Invalid ZIP entry (zip slip): " + entry.getName());
