@@ -103,7 +103,8 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         return true;
     }
 
-    private void grade(final AggregatedScore score, final QualityGateResult qualityGateResult, final GitLabApi gitLabApi, final Project project, final String sha,
+    private void grade(final AggregatedScore score, final QualityGateResult qualityGateResult,
+            final GitLabApi gitLabApi, final Project project, final String sha,
             final Environment env, final FilteredLog log) throws GitLabApiException {
         var errors = createErrorMessageMarkdown(log);
         var qualityGateDetails = qualityGateResult.createMarkdownSummary();
@@ -237,7 +238,8 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
                 .forEach(note -> delete(gitLabApi, note, projectId, mergeRequestId));
     }
 
-    private void createCommentOnMergeRequest(final GitLabApi gitLabApi, final Project project, final String mergeRequestId,
+    private void createCommentOnMergeRequest(final GitLabApi gitLabApi, final Project project,
+            final String mergeRequestId,
             final String comment, final FilteredLog log) throws GitLabApiException {
         var projectId = project.getId();
         var mergeRequestIid = Long.parseLong(mergeRequestId);
@@ -256,7 +258,8 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         }
     }
 
-    private void createCommentOnCommit(final GitLabApi gitLabApi, final Project project, final String sha, final String comment)
+    private void createCommentOnCommit(final GitLabApi gitLabApi, final Project project, final String sha,
+            final String comment)
             throws GitLabApiException {
         gitLabApi.getCommitsApi().addComment(project.getId(), sha, comment);
     }
@@ -348,23 +351,26 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
 
     private Optional<Path> readReports(final FilteredLog log, final GitLabApi gitLabApi, final String projectId,
             final Job job) {
-        try (var inputStream = gitLabApi.getJobApi().downloadArtifactsFile(projectId, job.getId())) {
-            try (var zis = new ZipInputStream(inputStream)) {
-                var tempDir = Files.createTempDirectory("artifacts");
-                ZipEntry entry;
-                while ((entry = zis.getNextEntry()) != null) {
-                    var outPath = tempDir.resolve(entry.getName());
-                    if (entry.isDirectory()) {
-                        Files.createDirectories(outPath);
-                    }
-                    else {
-                        Files.createDirectories(Objects.requireNonNull(outPath.getParent()));
-                        Files.copy(zis, outPath, StandardCopyOption.REPLACE_EXISTING);
-                    }
-                    zis.closeEntry();
+        try (var inputStream = gitLabApi.getJobApi().downloadArtifactsFile(projectId, job.getId());
+                var zis = new ZipInputStream(inputStream)) {
+            var tempDir = Files.createTempDirectory("artifacts");
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                var outPath = tempDir.resolve(entry.getName()).normalize();
+                if (!outPath.startsWith(tempDir)) {
+                    throw new IOException("Invalid ZIP entry (zip slip): " + entry.getName());
                 }
-                return Optional.of(tempDir);
+
+                if (entry.isDirectory()) {
+                    Files.createDirectories(outPath);
+                }
+                else {
+                    Files.createDirectories(Objects.requireNonNull(outPath.getParent()));
+                    Files.copy(zis, outPath, StandardCopyOption.REPLACE_EXISTING);
+                }
+                zis.closeEntry();
             }
+            return Optional.of(tempDir);
         }
         catch (IOException e) {
             log.logException(e, "Error while saving delta files");
