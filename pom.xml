@@ -146,14 +146,14 @@
             <mainClass>edu.hm.hafner.grading.gitlab.GitLabAutoGradingRunner</mainClass>
           </container>
           <to>
-            <image>docker.io/uhafner/autograding-gitlab-action</image>
+            <image>gitlab.lrz.de:5005/dev/docker-registry/autograding</image>
             <tags>
               <tag>${docker-image-tag}</tag>
               <tag>v${docker-image-tag}</tag>
             </tags>
             <auth>
-              <username>${env.DOCKER_IO_USERNAME}</username>
-              <password>${env.DOCKER_IO_PASSWORD}</password>
+              <username>no-required</username>
+              <password>${env.GITLAB_TOKEN}</password>
             </auth>
           </to>
           <from>
