@@ -18,6 +18,9 @@ import edu.hm.hafner.grading.ToolConfiguration;
 import edu.hm.hafner.grading.ToolParser;
 import edu.hm.hafner.util.FilteredLog;
 
+import java.nio.file.Path;
+import java.util.Optional;
+
 import static edu.hm.hafner.grading.gitlab.GitLabDiffCommentBuilder.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -47,6 +50,7 @@ class GitLabDiffCommentBuilderTest {
             """;
     private static final String PROJECT_URL = "CI_PROJECT_URL";
     private static final String COMMIT_SHA = "CI_COMMIT_SHA";
+    private static final Optional<Path> NO_DELTA = Optional.empty();
 
     @Test
     void shouldCreateRange() {
@@ -134,7 +138,7 @@ class GitLabDiffCommentBuilderTest {
                         MergeRequestVersion.class), "/work", new FilteredLog("GitLab"));
 
         var score = new AggregatedScore(new FilteredLog("Tests"));
-        score.gradeAnalysis(new ReportGenerator(), AnalysisConfiguration.from(ANALYSIS_CONFIGURATION));
+        score.gradeAnalysis(new ReportGenerator(), AnalysisConfiguration.from(ANALYSIS_CONFIGURATION), NO_DELTA);
 
         gitlab.createAnnotations(score);
 

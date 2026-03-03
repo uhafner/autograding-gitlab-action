@@ -6,9 +6,11 @@ import org.gitlab4j.api.DiscussionsApi;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.Discussion;
+import org.gitlab4j.api.models.Job;
 import org.gitlab4j.api.models.MergeRequest;
 import org.gitlab4j.api.models.MergeRequestVersion;
 import org.gitlab4j.api.models.Note;
+import org.gitlab4j.api.models.PipelineFilter;
 import org.gitlab4j.api.models.Project;
 
 import edu.hm.hafner.grading.AggregatedScore;
@@ -17,10 +19,18 @@ import edu.hm.hafner.grading.GradingReport;
 import edu.hm.hafner.grading.QualityGateResult;
 import edu.hm.hafner.util.FilteredLog;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * GitLab action entrypoint for the autograding action.
@@ -28,7 +38,11 @@ import java.util.logging.Level;
  * @author Ullrich Hafner
  * @author Jannik Ohme
  */
+@SuppressWarnings("PMD.GodClass")
 public class GitLabAutoGradingRunner extends AutoGradingRunner {
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private static final Optional<Path> NO_DELTA_AVAILABLE = Optional.empty();
+
     static final String AUTOGRADING_MARKER = "<!-- -[autograding-gitlab-action]- -->";
 
     /**
@@ -92,7 +106,8 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         return true;
     }
 
-    private void grade(final AggregatedScore score, final QualityGateResult qualityGateResult, final GitLabApi gitLabApi, final Project project, final String sha,
+    private void grade(final AggregatedScore score, final QualityGateResult qualityGateResult,
+            final GitLabApi gitLabApi, final Project project, final String sha,
             final Environment env, final FilteredLog log) throws GitLabApiException {
         var errors = createErrorMessageMarkdown(log);
         var qualityGateDetails = qualityGateResult.createMarkdownSummary();
@@ -226,7 +241,8 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
                 .forEach(note -> delete(gitLabApi, note, projectId, mergeRequestId));
     }
 
-    private void createCommentOnMergeRequest(final GitLabApi gitLabApi, final Project project, final String mergeRequestId,
+    private void createCommentOnMergeRequest(final GitLabApi gitLabApi, final Project project,
+            final String mergeRequestId,
             final String comment, final FilteredLog log) throws GitLabApiException {
         var projectId = project.getId();
         var mergeRequestIid = Long.parseLong(mergeRequestId);
@@ -245,7 +261,8 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         }
     }
 
-    private void createCommentOnCommit(final GitLabApi gitLabApi, final Project project, final String sha, final String comment)
+    private void createCommentOnCommit(final GitLabApi gitLabApi, final Project project, final String sha,
+            final String comment)
             throws GitLabApiException {
         gitLabApi.getCommitsApi().addComment(project.getId(), sha, comment);
     }
@@ -290,5 +307,83 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         }
 
         return Map.of();
+    }
+
+    @Override
+    protected Optional<Path> obtainDeltaReports(final FilteredLog log) {
+        var env = new Environment(log);
+        var gitlabUrl = env.getString("CI_SERVER_URL");
+        var oAuthToken = env.getString("GITLAB_TOKEN");
+        var projectId = env.getString("CI_PROJECT_ID");
+        var branch = env.getString("CI_DEFAULT_BRANCH");
+
+        if (StringUtils.isAnyBlank(gitlabUrl, oAuthToken, projectId, projectId)) {
+            return NO_DELTA_AVAILABLE;
+        }
+
+        try (var gitLabApi = new GitLabApi(gitlabUrl, oAuthToken)) {
+            gitLabApi.setRequestTimeout(5000, 10_000);
+            gitLabApi.enableRequestResponseLogging(Level.FINE, 4_096);
+
+            var filter = new PipelineFilter();
+            filter.setRef(branch);
+            var pipelines = gitLabApi.getPipelineApi().getPipelines(projectId, filter);
+            if (pipelines.isEmpty()) {
+                log.logInfo(">>> No pipeline found to download Artefacts for delta calculation.");
+
+                return NO_DELTA_AVAILABLE;
+            }
+
+            log.logInfo(">>> Delta Pipeline %s", pipelines.getFirst().getId());
+            var jobs = gitLabApi.getJobApi().getJobsStream(projectId, pipelines.getFirst().getId());
+            var job = jobs.filter(j -> j.getName().equals("maven")).findFirst();
+            if (job.isEmpty()) {
+                log.logInfo(">>> No build job found");
+
+                return NO_DELTA_AVAILABLE;
+            }
+
+            return readReports(log, gitLabApi, projectId, job.get());
+        }
+        catch (GitLabApiException e) {
+            log.logException(e, "Error while accessing GitLab API");
+
+            return NO_DELTA_AVAILABLE;
+        }
+    }
+
+    @SuppressWarnings("PMD.ExceptionAsFlowControl")
+    private Optional<Path> readReports(final FilteredLog log, final GitLabApi gitLabApi, final String projectId,
+            final Job job) {
+        try (var inputStream = gitLabApi.getJobApi().downloadArtifactsFile(projectId, job.getId());
+                var zis = new ZipInputStream(inputStream)) {
+            var tempDir = Files.createTempDirectory("artifacts");
+            for (ZipEntry entry = zis.getNextEntry(); entry != null; entry = zis.getNextEntry()) {
+                var outPath = tempDir.resolve(entry.getName()).normalize();
+                if (!outPath.startsWith(tempDir)) {
+                    throw new IOException("Invalid ZIP entry (zip slip): " + entry.getName());
+                }
+
+                if (entry.isDirectory()) {
+                    Files.createDirectories(outPath);
+                }
+                else {
+                    Files.createDirectories(Objects.requireNonNull(outPath.getParent()));
+                    Files.copy(zis, outPath, StandardCopyOption.REPLACE_EXISTING);
+                }
+                zis.closeEntry();
+            }
+            return Optional.of(tempDir);
+        }
+        catch (IOException e) {
+            log.logException(e, "Error while saving delta files");
+
+            return NO_DELTA_AVAILABLE;
+        }
+        catch (GitLabApiException e) {
+            log.logException(e, "Error while accessing GitLab API");
+
+            return NO_DELTA_AVAILABLE;
+        }
     }
 }

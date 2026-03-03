@@ -57,7 +57,7 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
         return hideWarningDescription;
     }
 
-    public boolean showCommentsInCommit() {
+    boolean showCommentsInCommit() {
         return !skipCommitComments;
     }
 
