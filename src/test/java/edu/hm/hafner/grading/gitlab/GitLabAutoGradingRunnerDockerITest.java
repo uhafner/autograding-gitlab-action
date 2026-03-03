@@ -29,9 +29,7 @@ class GitLabAutoGradingRunnerDockerITest {
                   }
                 ],
                 "name": "JUnit",
-                "passedImpact": 10,
-                "skippedImpact": -1,
-                "failureImpact": -5,
+                "failureRateImpact": -1,
                 "maxScore": 100
               },
               "analysis": [
@@ -143,20 +141,20 @@ class GitLabAutoGradingRunnerDockerITest {
                     .contains("Obtaining configuration from environment variable CONFIG")
                     .contains("Processing 1 test configuration(s)",
                             "-> Unittests Total: 1",
-                            "JUnit Score: 10 of 100",
+                            "JUnit Score: 100 of 100 [Whole Project]",
                             "Processing 2 coverage configuration(s)",
-                            "-> Line Coverage Total: LINE: 10.93% (33/302)",
-                            "-> Branch Coverage Total: BRANCH: 9.52% (4/42)",
-                            "=> JaCoCo Score: 20 of 100",
-                            "-> Mutation Coverage Total: MUTATION: 7.86% (11/140)",
-                            "=> PIT Score: 16 of 100",
+                            "-> Line Coverage Total: 10.93% [Whole Project]",
+                            "-> Branch Coverage Total: 9.52% [Whole Project]",
+                            "=> JaCoCo Score: 20 of 100 [Whole Project]",
+                            "-> Mutation Coverage Total: 7.86% [Whole Project]",
+                            "=> PIT Score: 16 of 100 [Whole Project]",
                             "Processing 2 static analysis configuration(s)",
                             "-> CheckStyle (checkstyle): 1 warning (normal: 1)",
                             "-> PMD (pmd): 1 warning (normal: 1)",
                             "=> Style Score: 6 of 100",
                             "-> SpotBugs (spotbugs): 1 bug (low: 1)",
                             "=> Bugs Score: 86 of 100",
-                            "Autograding score - 138 of 500");
+                            "Autograding score - 228 of 500");
         }
     }
 
@@ -171,7 +169,7 @@ class GitLabAutoGradingRunnerDockerITest {
                     .contains("Processing 1 test configuration(s)",
                             "Processing 2 coverage configuration(s)",
                             "Processing 2 static analysis configuration(s)",
-                            "Autograding score - 138 of 500")
+                            "Autograding score - 228 of 500")
                     .contains("Quality Gates GitLab Autograding",
                             "Found quality gates configuration in environment variable 'QUALITY_GATES'",
                             "Parsed 1 quality gate(s) from JSON configuration",
@@ -192,7 +190,7 @@ class GitLabAutoGradingRunnerDockerITest {
                     .contains("Processing 1 test configuration(s)",
                             "Processing 2 coverage configuration(s)",
                             "Processing 2 static analysis configuration(s)",
-                            "Autograding score - 138 of 500")
+                            "Autograding score - 228 of 500")
                     .contains("Quality Gates GitLab Autograding",
                             "Found quality gates configuration in environment variable 'QUALITY_GATES'",
                             "Parsed 1 quality gate(s) from JSON configuration",
@@ -214,12 +212,12 @@ class GitLabAutoGradingRunnerDockerITest {
                             "-> JUnit Tests Total: 1",
                             "Tests Score: 100 of 100",
                             "Processing 2 coverage configuration(s)",
-                            "-> Line Coverage Total: LINE: 10.93% (33/302)",
-                            "-> Branch Coverage Total: BRANCH: 9.52% (4/42)",
-                            "=> Code Coverage Score: 10 of 100",
-                            "-> Mutation Coverage Total: MUTATION: 7.86% (11/140)",
-                            "-> Test Strength Total: TEST_STRENGTH: 84.62% (11/13)",
-                            "=> Mutation Coverage Score: 46 of 100",
+                            "-> Line Coverage Total: 10.93% [Whole Project]",
+                            "-> Branch Coverage Total: 9.52% [Whole Project]",
+                            "=> Code Coverage Score: 10 of 100 [Whole Project]",
+                            "-> Mutation Coverage Total: 7.86% [Whole Project]",
+                            "-> Test Strength Total: 84.62% [Whole Project]",
+                            "=> Mutation Coverage Score: 46 of 100 [Whole Project]",
                             "Processing 2 static analysis configuration(s)",
                             "-> CheckStyle (checkstyle): 1 warning (normal: 1)",
                             "-> PMD (pmd): 1 warning (normal: 1)",
