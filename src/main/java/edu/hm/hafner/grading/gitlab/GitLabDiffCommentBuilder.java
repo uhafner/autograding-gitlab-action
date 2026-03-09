@@ -55,6 +55,7 @@ class GitLabDiffCommentBuilder extends GitLabCommentBuilder {
         }
         catch (GitLabApiException exception) { // If the comment is on a file or position not part of the diff
             getLog().logException(exception, "Can't create merge request comment for %s in #%d", relativePath, mergeRequest.getIid());
+            getLog().logError("Position is %s", position);
 
             if (showCommentsInCommit()) {
                 try {
