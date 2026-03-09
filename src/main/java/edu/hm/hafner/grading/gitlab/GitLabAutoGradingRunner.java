@@ -282,7 +282,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         var projectId = env.getString("CI_PROJECT_ID");
         var mergeRequest = env.getString("CI_MERGE_REQUEST_IID");
 
-        if (gitlabUrl.isBlank() || oAuthToken.isBlank() || projectId.isBlank() || !mergeRequest.isBlank()) {
+        if (gitlabUrl.isBlank() || oAuthToken.isBlank() || projectId.isBlank() || mergeRequest.isBlank()) {
             return Map.of();
         }
 
