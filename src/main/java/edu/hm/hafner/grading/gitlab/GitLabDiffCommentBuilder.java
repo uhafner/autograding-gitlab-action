@@ -1,5 +1,6 @@
 package edu.hm.hafner.grading.gitlab;
 
+import org.apache.commons.lang3.StringUtils;
 import org.gitlab4j.api.CommitsApi;
 import org.gitlab4j.api.DiscussionsApi;
 import org.gitlab4j.api.GitLabApiException;
@@ -20,6 +21,7 @@ class GitLabDiffCommentBuilder extends GitLabCommentBuilder {
     private final DiscussionsApi discussionsApi;
     private final MergeRequest mergeRequest;
     private final MergeRequestVersion lastVersion;
+    private final boolean isLoggingEnabled;
 
     GitLabDiffCommentBuilder(final CommitsApi commitsApi, final DiscussionsApi discussionsApi, final MergeRequest mergeRequest,
             final MergeRequestVersion lastVersion, final String workingDirectory, final FilteredLog log) {
@@ -28,6 +30,7 @@ class GitLabDiffCommentBuilder extends GitLabCommentBuilder {
         this.discussionsApi = discussionsApi;
         this.mergeRequest = mergeRequest;
         this.lastVersion = lastVersion;
+        isLoggingEnabled = StringUtils.isNotBlank(new Environment(log).getString("LOG_COMMENTS"));
     }
 
     @Override
@@ -48,6 +51,13 @@ class GitLabDiffCommentBuilder extends GitLabCommentBuilder {
         var markdownMessage = createMarkdownMessage(commentType, relativePath, lineStart, lineEnd, columnStart,
                 columnEnd, title, message, markDownDetails, this::getEnv);
         try {
+            if (isLoggingEnabled) {
+                getLog().logInfo("Creating merge request comment for %s in #%d", relativePath, mergeRequest.getIid());
+                getLog().logInfo("Position is %s", position);
+                getLog().logInfo("CommentType is %s", commentType);
+                getLog().logInfo("Message is %s", message);
+                getLog().logInfo("Full Message is %s", markdownMessage);
+            }
             discussionsApi.createMergeRequestDiscussion(
                     mergeRequest.getProjectId(),
                     mergeRequest.getIid(),
