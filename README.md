@@ -127,6 +127,8 @@ Since static analysis tools like CheckStyle or SpotBugs have lengthy description
 - ``SKIP_COMMIT_COMMENTS`` (boolean, default: `false`): Optional flag to skip the creation of comments in commits. 
 When this option is enabled, then comments are only added to merge requests. 
 When all your changes are integrated in merge requests, then you can skip the commit comments to reduce the noise in the merge request: in this case, the comments in the merge request will be replaced with the results of the latest commit only.
+- ``LOG_COMMENTS`` (boolean, default: `false`): Optional flag to log the created comments in the GitLab diffs. 
+This can be useful for debugging purposes when GitLab API calls fail, and you want to check which comments were created and which were not. 
 
 ## GitLab Access Token
 

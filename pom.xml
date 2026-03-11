@@ -13,7 +13,7 @@
 
   <groupId>edu.hm.hafner</groupId>
   <artifactId>autograding-gitlab-action</artifactId>
-  <version>5.1.2</version>
+  <version>5.2.1</version>
   <packaging>jar</packaging>
 
   <name>Autograding GitLab Action</name>
