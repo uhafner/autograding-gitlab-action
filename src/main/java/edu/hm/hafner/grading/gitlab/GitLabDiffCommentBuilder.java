@@ -1,6 +1,5 @@
 package edu.hm.hafner.grading.gitlab;
 
-import org.apache.commons.lang3.StringUtils;
 import org.gitlab4j.api.CommitsApi;
 import org.gitlab4j.api.DiscussionsApi;
 import org.gitlab4j.api.GitLabApiException;
@@ -30,7 +29,7 @@ class GitLabDiffCommentBuilder extends GitLabCommentBuilder {
         this.discussionsApi = discussionsApi;
         this.mergeRequest = mergeRequest;
         this.lastVersion = lastVersion;
-        isLoggingEnabled = StringUtils.isNotBlank(new Environment(log).getString("LOG_COMMENTS"));
+        isLoggingEnabled = new Environment(log).getBoolean("LOG_COMMENTS");
     }
 
     @Override
