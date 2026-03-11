@@ -120,6 +120,8 @@ Omitted parameters fall back to sensible defaults.
 - ``MAX_WARNING_COMMENTS`` (number, optional): Upper limit of warning annotations. Omit for unlimited.
 - ``MAX_COVERAGE_COMMENTS`` (number, optional): Upper limit of missed coverage annotations. Omit for unlimited.
 - ``SKIP_DETAILS`` (boolean, default: `false`): Optional flag to skip the details of the results (e.g., stack trace of failed tests, autograding detail tables) in the commit or merge request comment.
+- ``SHOW_HEADERS`` (boolean, default: `false`): Optional flag to enable the showing of headers for the different sections in the commit or merge request comment. 
+When this option is enabled, then the comment will be structured with headers for the different sections (e.g., "Test Results", "Code Coverage", etc.).
 - ``SKIP_WARNING_DESCRIPTION: true`` (boolean, default: `false`): Optional flag to skip the adding of warning descriptions for static analysis warnings. 
 Since static analysis tools like CheckStyle or SpotBugs have lengthy descriptions, it makes sense to skip the descriptions if you have many warnings.
 - ``SKIP_COMMIT_COMMENTS`` (boolean, default: `false`): Optional flag to skip the creation of comments in commits. 

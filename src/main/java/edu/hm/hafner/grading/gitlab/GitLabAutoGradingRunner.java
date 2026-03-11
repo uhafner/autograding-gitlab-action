@@ -113,9 +113,11 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
         var qualityGateDetails = qualityGateResult.createMarkdownSummary();
         var report = new GradingReport();
         var comment = env.getBoolean("SKIP_DETAILS")
-                ? report.getMarkdownSummary(score, getTitleName()) + errors + qualityGateDetails
-                : report.getMarkdownDetails(score, getTitleName()) + errors + qualityGateDetails;
-        comment = AUTOGRADING_MARKER + "\n\n" + comment + "\n\n<hr />\n\nCreated by " + getAutogradingVersionLink(log);
+                ? report.getMarkdownSummary(score, getTitleName(), env.getBoolean("SHOW_HEADERS"))
+                : report.getMarkdownDetails(score, getTitleName());
+        comment = AUTOGRADING_MARKER + "\n\n"
+                + comment + errors + qualityGateDetails
+                + "\n\n<hr />\n\nCreated by " + getAutogradingVersionLink(log);
         var mergeRequestEnvironment = env.getString("CI_MERGE_REQUEST_IID");
         if (mergeRequestEnvironment.isBlank() || !StringUtils.isNumeric(mergeRequestEnvironment)) {
             if (showCommentsInCommit(log)) {
