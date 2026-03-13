@@ -8,6 +8,8 @@ import edu.hm.hafner.grading.CommentBuilder;
 import edu.hm.hafner.util.FilteredLog;
 import edu.hm.hafner.util.VisibleForTesting;
 
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -23,14 +25,9 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
     private final boolean hideWarningDescription;
     private final boolean skipCommitComments;
 
-    @VisibleForTesting
-    @SuppressWarnings("NullAway")
-    GitLabCommentBuilder() {
-        this(null, new FilteredLog("Errors"));
-    }
-
-    GitLabCommentBuilder(final CommitsApi commitsApi, final FilteredLog log, final String... prefixesToRemove) {
-        super(prefixesToRemove);
+    GitLabCommentBuilder(final CommitsApi commitsApi, final Map<String, Set<Integer>> modifiedFiles,
+            final FilteredLog log, final String... prefixesToRemove) {
+        super(modifiedFiles, prefixesToRemove);
 
         this.commitsApi = commitsApi;
         this.log = log;
@@ -62,7 +59,7 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
     }
 
     @SuppressWarnings("checkstyle:ParameterNumber")
-    protected String createMarkdownMessage(final CommentType commentType, final String relativePath,
+    static String createMarkdownMessage(final CommentType commentType, final String relativePath,
             final int lineStart, final int lineEnd, final int columnStart, final int columnEnd,
             final String title, final String message, final String details,
             final Function<String, String> environment) {
@@ -83,18 +80,7 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
                 + (details.isBlank() ? StringUtils.EMPTY : "\n\n" + details);
     }
 
-    protected String createRange(final char prefix, final int start, final int end) {
-        if (start < 1) {
-            return StringUtils.EMPTY;
-        }
-        var single = String.valueOf(prefix) + start;
-        if (end <= start) {
-            return single;
-        }
-        return single + "-" + prefix + end;
-    }
-
-    private String getIcon(final CommentType commentType) {
+    static String getIcon(final CommentType commentType) {
         return switch (commentType) {
             case WARNING -> "warning";
             case NO_COVERAGE, PARTIAL_COVERAGE -> "footprints";
@@ -103,12 +89,23 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
     }
 
     @VisibleForTesting
-    String createLinesAndColumns(final String range, final int columnStart, final int columnEnd) {
+    static String createLinesAndColumns(final String range, final int columnStart, final int columnEnd) {
         var columns = createRange('C', columnStart, columnEnd);
         if (columns.isBlank()) {
             return "(%s)".formatted(range);
         }
         return "(%s:%s)".formatted(range, columns);
+    }
+
+    static String createRange(final char prefix, final int start, final int end) {
+        if (start < 1) {
+            return StringUtils.EMPTY;
+        }
+        var single = String.valueOf(prefix) + start;
+        if (end <= start) {
+            return single;
+        }
+        return single + "-" + prefix + end;
     }
 
     protected FilteredLog getLog() {
