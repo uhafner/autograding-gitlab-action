@@ -18,7 +18,7 @@ import edu.hm.hafner.grading.ToolConfiguration;
 import edu.hm.hafner.grading.ToolParser;
 import edu.hm.hafner.util.FilteredLog;
 
-import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
 
 import static edu.hm.hafner.grading.gitlab.GitLabDiffCommentBuilder.*;
@@ -50,47 +50,40 @@ class GitLabDiffCommentBuilderTest {
             """;
     private static final String PROJECT_URL = "CI_PROJECT_URL";
     private static final String COMMIT_SHA = "CI_COMMIT_SHA";
-    private static final Optional<Path> NO_DELTA = Optional.empty();
 
     @Test
     void shouldCreateRange() {
-        var builder = spy(GitLabCommentBuilder.class);
+        assertThat(createRange('L', 0, 0)).isEmpty();
+        assertThat(createRange('L', -1, 10)).isEmpty();
 
-        assertThat(builder.createRange('L', 0, 0)).isEmpty();
-        assertThat(builder.createRange('L', -1, 10)).isEmpty();
-
-        assertThat(builder.createRange('L', 1, 10)).isEqualTo("L1-L10");
-        assertThat(builder.createRange('L', 1, 1)).isEqualTo("L1");
+        assertThat(createRange('L', 1, 10)).isEqualTo("L1-L10");
+        assertThat(createRange('L', 1, 1)).isEqualTo("L1");
     }
 
     @Test
     void shouldCreateLinesAndColumns() {
-        var builder = spy(GitLabCommentBuilder.class);
-
-        assertThat(builder.createLinesAndColumns("L1", 0, 0)).isEqualTo("(L1)");
-        assertThat(builder.createLinesAndColumns("L1", 1, 0)).isEqualTo("(L1:C1)");
-        assertThat(builder.createLinesAndColumns("L1", 2, 3)).isEqualTo("(L1:C2-C3)");
+        assertThat(createLinesAndColumns("L1", 0, 0)).isEqualTo("(L1)");
+        assertThat(createLinesAndColumns("L1", 1, 0)).isEqualTo("(L1:C1)");
+        assertThat(createLinesAndColumns("L1", 2, 3)).isEqualTo("(L1:C2-C3)");
     }
 
     @Test
     void shouldCreateMarkDownMessage() {
-        var builder = spy(GitLabCommentBuilder.class);
-
-        assertThat(builder.createMarkdownMessage(
+        assertThat(createMarkdownMessage(
                 CommentType.WARNING, FILE,
                 10, 20, 5, 8,
                 "Title", "Message", "Details", this::getEnv))
                 .contains("#### :warning: &nbsp; Title", "Message", "Details",
                         "[Assignment.java(L10-L20:C5-C8)]",
                         URL + "/blob/" + SHA + "/" + FILE + "#L10-L20");
-        assertThat(builder.createMarkdownMessage(
+        assertThat(createMarkdownMessage(
                 CommentType.WARNING, FILE,
                 10, 20, 0, 8,
                 "Title", "Message", "Details", this::getEnv))
                 .contains("#### :warning: &nbsp; Title", "Message", "Details",
                         "[Assignment.java(L10-L20)]",
                         URL + "/blob/" + SHA + "/" + FILE + "#L10-L20");
-        assertThat(builder.createMarkdownMessage(
+        assertThat(createMarkdownMessage(
                 CommentType.WARNING, FILE,
                 10, 10, 0, 8,
                 "Title", "Message", "Details", this::getEnv))
@@ -113,7 +106,7 @@ class GitLabDiffCommentBuilderTest {
     void shouldCreateComment() throws GitLabApiException {
         var discussions = mock(DiscussionsApi.class);
         var commits = mock(CommitsApi.class);
-        var builder = new GitLabDiffCommentBuilder(commits, discussions, mock(MergeRequest.class),
+        var builder = new GitLabDiffCommentBuilder(commits, Map.of(), discussions, mock(MergeRequest.class),
                 mock(MergeRequestVersion.class), "/work", new FilteredLog("GitLab"));
 
         builder.createComment(CommentType.WARNING, FILE_NAME, 10, 100,
@@ -134,11 +127,11 @@ class GitLabDiffCommentBuilderTest {
     void shouldCreateAnnotation() throws GitLabApiException {
         var discussions = mock(DiscussionsApi.class);
         var commits = mock(CommitsApi.class);
-        var gitlab = new GitLabDiffCommentBuilder(commits, discussions, mock(MergeRequest.class), mock(
+        var gitlab = new GitLabDiffCommentBuilder(commits, Map.of(), discussions, mock(MergeRequest.class), mock(
                         MergeRequestVersion.class), "/work", new FilteredLog("GitLab"));
 
         var score = new AggregatedScore(new FilteredLog("Tests"));
-        score.gradeAnalysis(new ReportGenerator(), AnalysisConfiguration.from(ANALYSIS_CONFIGURATION), NO_DELTA);
+        score.gradeAnalysis(new ReportGenerator(), AnalysisConfiguration.from(ANALYSIS_CONFIGURATION), Optional.empty());
 
         gitlab.createAnnotations(score);
 

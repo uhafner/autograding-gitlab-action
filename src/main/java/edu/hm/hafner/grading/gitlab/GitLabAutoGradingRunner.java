@@ -197,8 +197,8 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
             final MergeRequest mergeRequest, final MergeRequestVersion lastVersion,
             final AggregatedScore score, final Environment env, final FilteredLog log) {
         if (canCreateLineComments(env)) {
-            var annotationBuilder = new GitLabDiffCommentBuilder(commitsApi, discussionsApi, mergeRequest, lastVersion,
-                    getWorkingDirectory(env), log);
+            var annotationBuilder = new GitLabDiffCommentBuilder(commitsApi, getModifiedFilesAndLines(),
+                    discussionsApi, mergeRequest, lastVersion, getWorkingDirectory(env), log);
             annotationBuilder.createAnnotations(score);
         }
         else {
@@ -209,8 +209,8 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
     private void createLineCommentsOnCommit(final GitLabApi gitLabApi, final Project project, final String sha,
             final AggregatedScore score, final Environment env, final FilteredLog log) {
         if (canCreateLineComments(env)) {
-            var commentBuilder = new GitLabCommitCommentBuilder(gitLabApi.getCommitsApi(), project.getId(), sha,
-                    getWorkingDirectory(env), log);
+            var commentBuilder = new GitLabCommitCommentBuilder(gitLabApi.getCommitsApi(), getModifiedFilesAndLines(),
+                    project.getId(), sha, getWorkingDirectory(env), log);
             commentBuilder.createAnnotations(score);
         }
         else {
@@ -277,7 +277,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
     }
 
     @Override
-    protected Map<String, Set<Integer>> getModifiedLines(final FilteredLog log) {
+    protected Map<String, Set<Integer>> extractModifiedLinesFromDiff(final FilteredLog log) {
         var env = new Environment(log);
         var gitlabUrl = env.getString("CI_SERVER_URL");
         var oAuthToken = env.getString("GITLAB_TOKEN");
@@ -312,7 +312,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
     }
 
     @Override
-    protected Optional<Path> obtainDeltaReports(final FilteredLog log) {
+    protected Optional<Path> fetchDeltaReportsFromPreviousPipeline(final FilteredLog log) {
         var env = new Environment(log);
         var gitlabUrl = env.getString("CI_SERVER_URL");
         var oAuthToken = env.getString("GITLAB_TOKEN");
