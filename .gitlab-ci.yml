@@ -4,7 +4,7 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
 
 image:
-  name: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/maven:3.9.14-eclipse-temurin-21-alpine
+  name: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/maven:3.9.15-eclipse-temurin-21-alpine
 
 stages:
   - build
