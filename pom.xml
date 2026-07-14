@@ -42,7 +42,7 @@
     <gitlab4j-api.version>6.3.0</gitlab4j-api.version>
     <testcontainers.version>2.0.5</testcontainers.version>
 
-    <jib-maven-plugin.version>3.5.1</jib-maven-plugin.version>
+    <jib-maven-plugin.version>3.5.2</jib-maven-plugin.version>
   </properties>
 
   <dependencies>
