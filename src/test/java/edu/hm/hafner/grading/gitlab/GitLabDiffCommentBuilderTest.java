@@ -22,23 +22,6 @@ class GitLabDiffCommentBuilderTest {
     private static final String SHA = "58c1e8a980dc0beb7d92d2266eb3e58852720a76";
     private static final String FILE = "src/main/java/edu/hm/hafner/java2/assignment1/Assignment.java";
 
-    private static final String ANALYSIS_CONFIGURATION = """
-            {
-              "analysis": [
-                {
-                  "name": "Style",
-                  "id": "style",
-                  "tools": [
-                    {
-                      "id": "checkstyle",
-                      "name": "Checkstyle",
-                      "pattern": "checkstyle.xml"
-                    }
-                  ]
-                }
-              ]
-            }
-            """;
     private static final String PROJECT_URL = "CI_PROJECT_URL";
     private static final String COMMIT_SHA = "CI_COMMIT_SHA";
 
