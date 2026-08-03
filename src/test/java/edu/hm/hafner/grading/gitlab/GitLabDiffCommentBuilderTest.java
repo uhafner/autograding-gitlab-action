@@ -8,18 +8,9 @@ import org.gitlab4j.api.models.MergeRequestVersion;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import edu.hm.hafner.analysis.IssueBuilder;
-import edu.hm.hafner.analysis.Report;
-import edu.hm.hafner.coverage.ModuleNode;
-import edu.hm.hafner.coverage.Node;
-import edu.hm.hafner.grading.AggregatedScore;
-import edu.hm.hafner.grading.AnalysisConfiguration;
-import edu.hm.hafner.grading.ToolConfiguration;
-import edu.hm.hafner.grading.ToolParser;
 import edu.hm.hafner.util.FilteredLog;
 
 import java.util.Map;
-import java.util.Optional;
 
 import static edu.hm.hafner.grading.gitlab.GitLabDiffCommentBuilder.*;
 import static org.assertj.core.api.Assertions.*;
@@ -130,10 +121,9 @@ class GitLabDiffCommentBuilderTest {
         var gitlab = new GitLabDiffCommentBuilder(commits, Map.of(), discussions, mock(MergeRequest.class), mock(
                         MergeRequestVersion.class), "/work", new FilteredLog("GitLab"));
 
-        var score = new AggregatedScore(new FilteredLog("Tests"));
-        score.gradeAnalysis(new ReportGenerator(), AnalysisConfiguration.from(ANALYSIS_CONFIGURATION), Optional.empty());
-
-        gitlab.createAnnotations(score);
+        gitlab.createComment(CommentType.WARNING, "src/main/java/File.java",
+                10, 100, "Message", "CheckStyle: HiddenField", 1, 10,
+                "", "<p>Since Checkstyle 3.0</p><p>");
 
         var details = ArgumentCaptor.forClass(String.class);
         verify(discussions).createMergeRequestDiscussion(anyLong(), anyLong(), details.capture(), isNull(), isNull(),
@@ -142,38 +132,6 @@ class GitLabDiffCommentBuilderTest {
         assertThat(details.getValue()).contains(
                 "#### :warning: &nbsp; CheckStyle: HiddenField",
                         "[File.java(L10-L100:C1-C10)](/blob//src/main/java/File.java#L10-L100): Message",
-                        "<p>Since Checkstyle 3.0</p><p>",
-                        "Checks that a local variable or a parameter does not shadow a field",
-                        "that is defined in the same class.");
-    }
-
-    private static class ReportGenerator implements ToolParser {
-        @Override
-        public Report readReport(final ToolConfiguration tool, final String directory, final FilteredLog log) {
-            return createReport();
-        }
-
-        private Report createReport() {
-            var report = new Report();
-            try (var builder = new IssueBuilder()) {
-                report.add(builder.setFileName(FILE_NAME)
-                        .setLineStart(10)
-                        .setLineEnd(100)
-                        .setOrigin("checkstyle")
-                        .setOriginName("CheckStyle")
-                        .setMessage("Message")
-                        .setCategory("Title")
-                        .setType("HiddenField")
-                        .setColumnStart(1)
-                        .setColumnEnd(10)
-                        .build());
-            }
-            return report;
-        }
-
-        @Override
-        public Node readNode(final ToolConfiguration configuration, final String directory, final FilteredLog log) {
-            return new ModuleNode("module");
-        }
+                        "<p>Since Checkstyle 3.0</p><p>");
     }
 }
