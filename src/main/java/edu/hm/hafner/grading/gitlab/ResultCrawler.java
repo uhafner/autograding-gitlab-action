@@ -1,6 +1,7 @@
 package edu.hm.hafner.grading.gitlab;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.MergeRequest;
@@ -36,14 +37,14 @@ public class ResultCrawler {
     private static final String GITLAB_HOST_URL = "https://gitlab.lrz.de";
 
     // ------- Default values that can be changed as needed -------
-    private static final String DEFAULT_GROUP_PATH = "dev/courses/java2"; // the top-level group, for example, dev/courses/java2/
-    private static final String DEFAULT_ASSIGNMENT = "assignment4"; // the assignment name, for example, assignment7
-    private static final String DEFAULT_MR_LABEL = "solution"; // the label to filter merge requests, for example, solution
+    private static final String DEFAULT_GROUP_PATH = "dev/courses/seng2"; // the top-level group, for example, dev/courses/java2/
+    private static final String DEFAULT_ASSIGNMENT = ""; // the assignment name, for example, assignment7
+    private static final String DEFAULT_MR_LABEL = "autograding"; // the label to filter merge requests, for example, solution
 
     private static final Set<String> SKIP_PROJECTS_FROM = Set.of("hafner"); // students to skip, for example, "hafner"
     // ------- No need to change anything below this line -------
 
-    private static final Pattern GITLAB_TOKEN_PATTERN = Pattern.compile("glpat-[A-Za-z0-9_\\-]+");
+    private static final Pattern GITLAB_TOKEN_PATTERN = Pattern.compile("glpat-[A-Za-z0-9_\\-.]+");
 
     private static final Pattern CATEGORIES_AND_SCORES
             = Pattern.compile("##.*?(?<category>[\\p{L}\\s:]+)- (?<value>\\d+) of (?<total>\\d+)");
@@ -55,6 +56,7 @@ public class ResultCrawler {
     private static final String PIPELINE = "Pipeline";
     private static final String MR_NUMBER = "MR #";
     private static final String MR_NAME = "MR Name";
+    private static final String STUDENT_EMAIL_SEPARATOR = "_at";
 
     /**
      * Starts the crawler. Usage: {@code ResultCrawler [assignment-name [merge-request-label]]}.
@@ -83,7 +85,8 @@ public class ResultCrawler {
         System.out.println("Merge Request Label: " + label);
         System.out.println("----------------------------------------------------");
 
-        crawler.createResultsFor(DEFAULT_GROUP_PATH + "/" + assignment, label);
+        var group = StringUtils.isBlank(assignment) ? DEFAULT_GROUP_PATH : DEFAULT_GROUP_PATH + "/" + assignment;
+        crawler.createResultsFor(group, label);
     }
 
     private void createResultsFor(final String repositoryPath, final String label)
@@ -97,18 +100,19 @@ public class ResultCrawler {
             int projectIndex = 0;
             for (Project project : projects) {
                 projectIndex++;
+                var projectName = project.getName();
 
-                var studentName = StringUtils.substringBetween(project.getName(), "-", "_at");
-                if (SKIP_PROJECTS_FROM.contains(studentName)) {
+                var assignmentName = extractStudentOrGroup(projectName);
+                if (SKIP_PROJECTS_FROM.contains(assignmentName)) {
                     continue;
                 }
 
-                print("→ [%d/%d] Student: %s%n", projectIndex, projects.size(), studentName);
+                print("→ [%d/%d] %s: %s%n", projectIndex, projects.size(), getNameTitle(projectName), assignmentName);
 
                 Map<String, String> scores = new LinkedHashMap<>();
-                rows.put(studentName, scores);
+                rows.put(assignmentName, scores);
 
-                scores.put("Student", studentName);
+                scores.put(getNameTitle(projectName), assignmentName);
 
                 Optional<MergeRequest> mergeRequests = gitLabApi.getMergeRequestApi().getMergeRequests(project.getId())
                         .stream().filter(m -> m.getLabels().contains(label)).findFirst();
@@ -162,6 +166,27 @@ public class ResultCrawler {
         }
 
         writeCsvFile(rows);
+    }
+
+    private String getNameTitle(final String name) {
+        if (isStudentName(name)) {
+            return "Student";
+        }
+        return "Group";
+    }
+
+    private String extractStudentOrGroup(final String projectName) {
+        if (isStudentName(projectName)) {
+            return StringUtils.substringBetween(projectName, "-", STUDENT_EMAIL_SEPARATOR);
+        }
+        if (Strings.CI.contains(projectName, "-")) {
+            return StringUtils.substringAfterLast(projectName, "-");
+        }
+        throw new IllegalArgumentException("Cannot parse project name " + projectName);
+    }
+
+    private boolean isStudentName(final String projectName) {
+        return Strings.CI.contains(projectName, STUDENT_EMAIL_SEPARATOR);
     }
 
     private void skip(final String reason, final Map<String, String> scores) {
