@@ -1,10 +1,9 @@
 package edu.hm.hafner.grading.gitlab;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.Strings;
-
 import edu.hm.hafner.util.FilteredLog;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 
 /**
  * Simple utility to access environment variables.
@@ -24,12 +23,10 @@ class Environment {
             var integer = Integer.parseInt(value);
             log.logInfo(">>>> %s: %s", key, integer);
             return integer;
-        }
-        catch (NumberFormatException _) {
+        } catch (NumberFormatException _) {
             if (StringUtils.isBlank(value)) {
                 log.logInfo(">>>> %s: not set", key);
-            }
-            else {
+            } else {
                 log.logError(">>>> Error: no valid integer value in environment variable key %s: %s", key, value);
             }
 
@@ -41,8 +38,7 @@ class Environment {
         var value = read(key);
         if (StringUtils.isBlank(value)) {
             log.logInfo(">>>> %s: not set", key);
-        }
-        else {
+        } else {
             log.logInfo(">>>> %s: %s", key, value);
         }
         return StringUtils.defaultString(value);

@@ -1,16 +1,14 @@
 package edu.hm.hafner.grading.gitlab;
 
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.gitlab4j.api.CommitsApi;
-
 import edu.hm.hafner.grading.CommentBuilder;
 import edu.hm.hafner.util.FilteredLog;
 import edu.hm.hafner.util.VisibleForTesting;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.gitlab4j.api.CommitsApi;
 
 /**
  * Base class for comment builders that publish comments to GitLab.
@@ -25,8 +23,11 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
     private final boolean hideWarningDescription;
     private final boolean skipCommitComments;
 
-    GitLabCommentBuilder(final CommitsApi commitsApi, final Map<String, Set<Integer>> modifiedFiles,
-            final FilteredLog log, final String... prefixesToRemove) {
+    GitLabCommentBuilder(
+            final CommitsApi commitsApi,
+            final Map<String, Set<Integer>> modifiedFiles,
+            final FilteredLog log,
+            final String... prefixesToRemove) {
         super(modifiedFiles, prefixesToRemove);
 
         this.commitsApi = commitsApi;
@@ -59,9 +60,16 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
     }
 
     @SuppressWarnings("checkstyle:ParameterNumber")
-    static String createMarkdownMessage(final CommentType commentType, final String relativePath,
-            final int lineStart, final int lineEnd, final int columnStart, final int columnEnd,
-            final String title, final String message, final String details,
+    static String createMarkdownMessage(
+            final CommentType commentType,
+            final String relativePath,
+            final int lineStart,
+            final int lineEnd,
+            final int columnStart,
+            final int columnEnd,
+            final String title,
+            final String message,
+            final String details,
             final Function<String, String> environment) {
         var linkName = FilenameUtils.getName(relativePath);
         var projectUrl = environment.apply("CI_PROJECT_URL");
@@ -75,8 +83,9 @@ abstract class GitLabCommentBuilder extends CommentBuilder {
         }
         var link = "[%s](%s)".formatted(linkName, linkUrl);
 
-        return "%s%n%n#### :%s: &nbsp; %s%n%n%s: %s".formatted(
-                GitLabAutoGradingRunner.AUTOGRADING_MARKER, getIcon(commentType), title, link, message)
+        return "%s%n%n#### :%s: &nbsp; %s%n%n%s: %s"
+                        .formatted(
+                                GitLabAutoGradingRunner.AUTOGRADING_MARKER, getIcon(commentType), title, link, message)
                 + (details.isBlank() ? StringUtils.EMPTY : "\n\n" + details);
     }
 
