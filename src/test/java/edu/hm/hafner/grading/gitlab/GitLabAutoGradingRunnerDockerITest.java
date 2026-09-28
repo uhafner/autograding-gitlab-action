@@ -1,16 +1,15 @@
 package edu.hm.hafner.grading.gitlab;
 
+import static org.assertj.core.api.Assertions.*;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.ToStringConsumer;
 import org.testcontainers.containers.output.WaitingConsumer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import static org.assertj.core.api.Assertions.*;
 
 /**
  * Integration test for the grading action. Starts the container and checks if the grading runs as expected.
@@ -139,7 +138,8 @@ class GitLabAutoGradingRunnerDockerITest {
 
             assertThat(readStandardOut(container))
                     .contains("Obtaining configuration from environment variable CONFIG")
-                    .contains("Processing 1 test configuration(s)",
+                    .contains(
+                            "Processing 1 test configuration(s)",
                             "-> Unittests Total: 1",
                             "JUnit Score: 100 of 100 [Whole Project]",
                             "Processing 2 coverage configuration(s)",
@@ -166,11 +166,13 @@ class GitLabAutoGradingRunnerDockerITest {
 
             assertThat(readStandardOut(container))
                     .contains("Obtaining configuration from environment variable CONFIG")
-                    .contains("Processing 1 test configuration(s)",
+                    .contains(
+                            "Processing 1 test configuration(s)",
                             "Processing 2 coverage configuration(s)",
                             "Processing 2 static analysis configuration(s)",
                             "Autograding score - 228 of 500")
-                    .contains("Quality Gates GitLab Autograding",
+                    .contains(
+                            "Quality Gates GitLab Autograding",
                             "Found quality gates configuration in environment variable 'QUALITY_GATES'",
                             "Parsed 1 quality gate(s) from JSON configuration",
                             "Quality gates evaluation completed: ✅ SUCCESS",
@@ -187,11 +189,13 @@ class GitLabAutoGradingRunnerDockerITest {
 
             assertThat(readStandardOut(container))
                     .contains("Obtaining configuration from environment variable CONFIG")
-                    .contains("Processing 1 test configuration(s)",
+                    .contains(
+                            "Processing 1 test configuration(s)",
                             "Processing 2 coverage configuration(s)",
                             "Processing 2 static analysis configuration(s)",
                             "Autograding score - 228 of 500")
-                    .contains("Quality Gates GitLab Autograding",
+                    .contains(
+                            "Quality Gates GitLab Autograding",
                             "Found quality gates configuration in environment variable 'QUALITY_GATES'",
                             "Parsed 1 quality gate(s) from JSON configuration",
                             "Quality gates evaluation completed: ❌ FAILURE",
@@ -207,8 +211,10 @@ class GitLabAutoGradingRunnerDockerITest {
             startContainerWithAllFiles(container);
 
             assertThat(readStandardOut(container))
-                    .contains("No configuration provided (environment variable CONFIG not set), using default configuration")
-                    .contains("Processing 1 test configuration(s)",
+                    .contains(
+                            "No configuration provided (environment variable CONFIG not set), using default configuration")
+                    .contains(
+                            "Processing 1 test configuration(s)",
                             "-> JUnit Tests Total: 1",
                             "Tests Score: 100 of 100",
                             "Processing 2 coverage configuration(s)",
@@ -225,7 +231,8 @@ class GitLabAutoGradingRunnerDockerITest {
                             "-> SpotBugs (spotbugs): 1 bug (low: 1)",
                             "=> Bugs Score: 97 of 100",
                             "Autograding score - 351 of 500 (70%)")
-                    .contains("Environment variable 'QUALITY_GATES' not found or empty",
+                    .contains(
+                            "Environment variable 'QUALITY_GATES' not found or empty",
                             "No quality gates to evaluate",
                             "Autograding finished with some errors in the log, failing the action");
         }
@@ -236,7 +243,8 @@ class GitLabAutoGradingRunnerDockerITest {
         try (var container = createContainer()) {
             container.withWorkingDirectory("/github/workspace").start();
             assertThat(readStandardOut(container))
-                    .contains("Processing 1 test configuration(s)",
+                    .contains(
+                            "Processing 1 test configuration(s)",
                             "=> Tests Score: 100 of 100",
                             "Configuration error for 'JUnit Tests'?",
                             "Processing 2 coverage configuration(s)",
@@ -269,17 +277,20 @@ class GitLabAutoGradingRunnerDockerITest {
 
         var composedConsumer = toStringConsumer.andThen(waitingConsumer);
         container.followOutput(composedConsumer);
-        waitingConsumer.waitUntil(frame -> frame.getUtf8String().contains("End GitLab Autograding"), 60,
-                TimeUnit.SECONDS);
+        waitingConsumer.waitUntil(
+                frame -> frame.getUtf8String().contains("End GitLab Autograding"), 60, TimeUnit.SECONDS);
 
         return toStringConsumer.toUtf8String();
     }
 
     private void startContainerWithAllFiles(final GenericContainer<?> container) {
-        container.withWorkingDirectory("/github/workspace")
+        container
+                .withWorkingDirectory("/github/workspace")
                 .withCopyFileToContainer(read("checkstyle/checkstyle.xml"), WS + "checkstyle-result.xml")
                 .withCopyFileToContainer(read("jacoco/jacoco.xml"), WS + "site/jacoco/jacoco.xml")
-                .withCopyFileToContainer(read("junit/TEST-edu.hm.hafner.grading.AutoGradingActionTest.xml"), WS + "surefire-reports/TEST-Aufgabe3Test.xml")
+                .withCopyFileToContainer(
+                        read("junit/TEST-edu.hm.hafner.grading.AutoGradingActionTest.xml"),
+                        WS + "surefire-reports/TEST-Aufgabe3Test.xml")
                 .withCopyFileToContainer(read("pit/mutations.xml"), WS + "pit-reports/mutations.xml")
                 .withCopyFileToContainer(read("pmd/pmd.xml"), WS + "pmd.xml")
                 .withCopyFileToContainer(read("spotbugs/spotbugsXml.xml"), WS + "spotbugsXml.xml")

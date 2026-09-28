@@ -1,12 +1,11 @@
 package edu.hm.hafner.grading.gitlab;
 
-import org.gitlab4j.api.models.Diff;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.*;
 
 import java.util.List;
 import java.util.Set;
-
-import static org.assertj.core.api.Assertions.*;
+import org.gitlab4j.api.models.Diff;
+import org.junit.jupiter.api.Test;
 
 class DiffParserTest {
     @Test

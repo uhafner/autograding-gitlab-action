@@ -3,7 +3,6 @@ package edu.hm.hafner.grading.archunit;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
-
 import edu.hm.hafner.archunit.ArchitectureRules;
 
 /**
@@ -15,7 +14,8 @@ import edu.hm.hafner.archunit.ArchitectureRules;
 @AnalyzeClasses(packages = "edu.hm.hafner.grading")
 final class ArchitectureTest {
     @ArchTest
-    static final ArchRule NO_EXCEPTIONS_WITH_NO_ARG_CONSTRUCTOR = ArchitectureRules.NO_EXCEPTIONS_WITH_NO_ARG_CONSTRUCTOR;
+    static final ArchRule NO_EXCEPTIONS_WITH_NO_ARG_CONSTRUCTOR =
+            ArchitectureRules.NO_EXCEPTIONS_WITH_NO_ARG_CONSTRUCTOR;
 
     @ArchTest
     static final ArchRule NO_PUBLIC_TEST_CLASSES = ArchitectureRules.NO_PUBLIC_TEST_CLASSES;
@@ -24,7 +24,8 @@ final class ArchitectureTest {
     static final ArchRule ONLY_PACKAGE_PRIVATE_TEST_METHODS = ArchitectureRules.ONLY_PACKAGE_PRIVATE_TEST_METHODS;
 
     @ArchTest
-    static final ArchRule ONLY_PACKAGE_PRIVATE_ARCHITECTURE_TESTS = ArchitectureRules.ONLY_PACKAGE_PRIVATE_ARCHITECTURE_TESTS.allowEmptyShould(true);
+    static final ArchRule ONLY_PACKAGE_PRIVATE_ARCHITECTURE_TESTS =
+            ArchitectureRules.ONLY_PACKAGE_PRIVATE_ARCHITECTURE_TESTS.allowEmptyShould(true);
 
     @ArchTest
     static final ArchRule NO_TEST_API_CALLED = ArchitectureRules.NO_TEST_API_CALLED;
@@ -41,6 +42,5 @@ final class ArchitectureTest {
     @ArchTest
     static final ArchRule READ_RESOLVE_SHOULD_BE_PROTECTED = ArchitectureRules.READ_RESOLVE_SHOULD_BE_PROTECTED;
 
-    private ArchitectureTest() {
-    }
+    private ArchitectureTest() {}
 }
