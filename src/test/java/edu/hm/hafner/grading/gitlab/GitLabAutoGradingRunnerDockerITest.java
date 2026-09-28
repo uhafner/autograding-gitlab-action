@@ -1,6 +1,6 @@
 package edu.hm.hafner.grading.gitlab;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -267,7 +267,7 @@ class GitLabAutoGradingRunnerDockerITest {
     }
 
     private GenericContainer<?> createContainer() {
-        return new GenericContainer<>(DockerImageName.parse("uhafner/autograding-gitlab-action:5.4.0-SNAPSHOT"));
+        return new GenericContainer<>(DockerImageName.parse("uhafner/autograding-gitlab-action:5.4.0"));
     }
 
     private String readStandardOut(final GenericContainer<? extends GenericContainer<?>> container)
