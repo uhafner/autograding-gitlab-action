@@ -1,5 +1,22 @@
 package edu.hm.hafner.grading.gitlab;
 
+import edu.hm.hafner.grading.AggregatedScore;
+import edu.hm.hafner.grading.AutoGradingRunner;
+import edu.hm.hafner.grading.GradingReport;
+import edu.hm.hafner.grading.QualityGateResult;
+import edu.hm.hafner.util.FilteredLog;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.gitlab4j.api.CommitsApi;
 import org.gitlab4j.api.DiscussionsApi;
@@ -13,25 +30,6 @@ import org.gitlab4j.api.models.Note;
 import org.gitlab4j.api.models.PipelineFilter;
 import org.gitlab4j.api.models.Project;
 
-import edu.hm.hafner.grading.AggregatedScore;
-import edu.hm.hafner.grading.AutoGradingRunner;
-import edu.hm.hafner.grading.GradingReport;
-import edu.hm.hafner.grading.QualityGateResult;
-import edu.hm.hafner.util.FilteredLog;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-
 /**
  * GitLab action entrypoint for the autograding action.
  *
@@ -44,6 +42,7 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
     private static final Optional<Path> NO_DELTA_AVAILABLE = Optional.empty();
 
     static final String AUTOGRADING_MARKER = "<!-- -[autograding-gitlab-action]- -->";
+    private static final String SKIP_COMMIT_COMMENTS = "SKIP_COMMIT_COMMENTS";
 
     /**
      * The public entry point for the action in the docker container simply calls the autograding runner.
@@ -120,11 +119,11 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
                 + "\n\n<hr />\n\nCreated by " + getAutogradingVersionLink(log);
         var mergeRequestEnvironment = env.getString("CI_MERGE_REQUEST_IID");
         if (mergeRequestEnvironment.isBlank() || !StringUtils.isNumeric(mergeRequestEnvironment)) {
-            if (showCommentsInCommit(log)) {
-                commentCommit(score, gitLabApi, project, sha, env, log, comment);
+            if (env.getBoolean(SKIP_COMMIT_COMMENTS)) {
+                log.logInfo("Skipping comments on single commit");
             }
             else {
-                log.logInfo("Skipping comments on single commit");
+                commentCommit(score, gitLabApi, project, sha, env, log, comment);
             }
         }
         else {
@@ -267,13 +266,6 @@ public class GitLabAutoGradingRunner extends AutoGradingRunner {
             final String comment)
             throws GitLabApiException {
         gitLabApi.getCommitsApi().addComment(project.getId(), sha, comment);
-    }
-
-    private boolean showCommentsInCommit(final FilteredLog log) {
-        var name = "SKIP_COMMIT_COMMENTS";
-        var defined = StringUtils.isNotBlank(System.getenv(name));
-        log.logInfo(">>>> %s: %b", name, defined);
-        return !defined;
     }
 
     @Override
