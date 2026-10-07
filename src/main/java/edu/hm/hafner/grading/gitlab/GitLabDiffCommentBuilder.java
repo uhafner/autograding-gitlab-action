@@ -42,7 +42,7 @@ class GitLabDiffCommentBuilder extends GitLabCommentBuilder {
     }
 
     @Override
-    @SuppressWarnings({"checkstyle:ParameterNumber", "PMD.NullAssignment"})
+    @SuppressWarnings("checkstyle:ParameterNumber")
     protected boolean createComment(
             final CommentType commentType,
             final String relativePath,
